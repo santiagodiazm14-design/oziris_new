@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -18,8 +17,10 @@ model User {
   tracks    Track[]
   purchases Purchase[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  resetPasswordCode    String?
+  resetPasswordExpires DateTime?
 }
 
 model Track {
