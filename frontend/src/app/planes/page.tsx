@@ -2,10 +2,12 @@
 "use client";
 
 import React from 'react';
-import { Check, Star } from 'lucide-react'; // Iconos de palomita y estrella
+import { Check, Star, X } from 'lucide-react'; // Iconos de palomita y estrella
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function PricingPage() {
+  const router = useRouter();
   // Arreglo de objetos con la información de cada membresía (Tiers de pago)
   const plans = [
     {
@@ -24,8 +26,8 @@ export default function PricingPage() {
     {
       name: "Plus",
       description: "Beneficios exclusivos",
-      priceYear: "$69.99",
-      priceMonth: "$5.99",
+      priceYear: "$250.000",
+      priceMonth: "$25.000",
       features: [
         "Subir hasta 100 beats",
         "Perfil mejorado (banners, links, redes)",
@@ -37,8 +39,8 @@ export default function PricingPage() {
     {
       name: "Premium",
       description: "Disfruta a tu estilo",
-      priceYear: "$119.00",
-      priceMonth: "$9.99",
+      priceYear: "$600.000",
+      priceMonth: "$50.000",
       features: [
         "Beats ilimitados",
         "Perfil avanzado",
@@ -52,7 +54,13 @@ export default function PricingPage() {
   return (
     // Contenedor principal: min-h-screen para cubrir toda la pantalla, con fondo oscuro
     <div className="min-h-screen bg-[#0a0a0a] text-white py-20 px-4 flex flex-col items-center relative overflow-hidden">
-      
+      <button 
+        onClick={() => router.push('/inicio')}
+        className="absolute top-8 left-8 md:top-12 md:left-12 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors z-20"
+      >
+        <X className="w-6 h-6 text-zinc-400" />
+      </button>
+
       {/* Background Glow Decorators: Círculos con desenfoque extremo para dar efecto glassmorphism premium */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-full z-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/20 blur-[120px]" />

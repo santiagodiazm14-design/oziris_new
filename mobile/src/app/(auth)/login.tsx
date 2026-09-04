@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Mail, Lock, ArrowRight } from 'lucide-react-native';
@@ -38,7 +38,7 @@ export default function LoginScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Correo Electrónico</Text>
             <View style={styles.inputContainer}>
-              <Mail color="#71717a" size={20} style={styles.inputIcon} />
+              <Mail color="#71717a" size={20} />
               <TextInput
                 style={styles.input}
                 placeholder="tu@correo.com"
@@ -54,12 +54,14 @@ export default function LoginScreen() {
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
               <Text style={styles.label}>Contraseña</Text>
-              <TouchableOpacity>
-                <Text style={styles.forgotPassword}>¿Olvidaste tu contraseña?</Text>
-              </TouchableOpacity>
+              <Link href="/(auth)/forgot-password" asChild>
+                <TouchableOpacity>
+                  <Text style={styles.forgotPassword}>¿Olvidaste tu contraseña?</Text>
+                </TouchableOpacity>
+              </Link>
             </View>
             <View style={styles.inputContainer}>
-              <Lock color="#71717a" size={20} style={styles.inputIcon} />
+              <Lock color="#71717a" size={20} />
               <TextInput
                 style={styles.input}
                 placeholder="••••••••"
@@ -149,9 +151,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 52,
-  },
-  inputIcon: {
-    marginRight: 8,
+    gap: 8,
   },
   input: {
     flex: 1,

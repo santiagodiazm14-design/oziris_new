@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Mail, Lock, User, ArrowRight } from 'lucide-react-native';
@@ -33,7 +33,7 @@ export default function RegisterScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Nombre de Usuario</Text>
             <View style={styles.inputContainer}>
-              <User color="#71717a" size={20} style={styles.inputIcon} />
+              <User color="#71717a" size={20} />
               <TextInput
                 style={styles.input}
                 placeholder="ProductorXYZ"
@@ -48,7 +48,7 @@ export default function RegisterScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Correo Electrónico</Text>
             <View style={styles.inputContainer}>
-              <Mail color="#71717a" size={20} style={styles.inputIcon} />
+              <Mail color="#71717a" size={20} />
               <TextInput
                 style={styles.input}
                 placeholder="tu@correo.com"
@@ -64,7 +64,7 @@ export default function RegisterScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Contraseña</Text>
             <View style={styles.inputContainer}>
-              <Lock color="#71717a" size={20} style={styles.inputIcon} />
+              <Lock color="#71717a" size={20} />
               <TextInput
                 style={styles.input}
                 placeholder="Crea una contraseña segura"
@@ -146,9 +146,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 52,
-  },
-  inputIcon: {
-    marginRight: 8,
+    gap: 8,
   },
   input: {
     flex: 1,

@@ -44,7 +44,7 @@ export default function LoginPage() {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium text-zinc-300">Contraseña</label>
-            <Link href="#" className="text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors">
+            <Link href="/forgot-password" className="text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors">
               ¿Olvidaste tu contraseña?
             </Link>
           </div>

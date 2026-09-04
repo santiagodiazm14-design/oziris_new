@@ -1,6 +1,6 @@
-import React from 'react';
+
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { Check, Star } from 'lucide-react-native';
+import { Check, Star, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
@@ -50,10 +50,10 @@ export default function PricingScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <TouchableOpacity 
-        style={styles.backButton} 
-        onPress={() => router.replace('/(auth)/register')}
+        style={styles.closeButton} 
+        onPress={() => router.replace('/inicio')}
       >
-        <Text style={styles.backButtonText}>← Volver al inicio</Text>
+        <X color="#a1a1aa" size={24} />
       </TouchableOpacity>
 
       <View style={styles.header}>
@@ -310,16 +310,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  backButton: {
+  closeButton: {
     alignSelf: 'flex-start',
     marginBottom: 20,
     padding: 8,
     borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.05)',
-  },
-  backButtonText: {
-    color: '#a1a1aa',
-    fontSize: 14,
-    fontWeight: '500',
   },
 });
