@@ -1,12 +1,75 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, ChevronDown, Menu, Headphones, Grid, Activity, Play, Star, Tag, Zap, Mic, Flame, ShoppingBag, X, LogOut } from 'lucide-react';
+import { Search, ChevronDown, Menu, Headphones, Grid, Activity, Play, Pause, Star, Tag, Zap, Mic, Flame, ShoppingBag, X, LogOut, UploadCloud, Music } from 'lucide-react';
+import { fetchTracks, Track } from '@/services/api';
+import UploadBeatModal from '@/components/tracks/UploadBeatModal';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export default function InicioPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [isLoadingTracks, setIsLoadingTracks] = useState(true);
+  const [selectedGenre, setSelectedGenre] = useState<string | undefined>(undefined);
+
+  // Audio player state
+  const [currentlyPlayingId, setCurrentlyPlayingId] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const loadTracks = async (genre?: string) => {
+    try {
+      setIsLoadingTracks(true);
+      const data = await fetchTracks(genre);
+      setTracks(data);
+    } catch (err) {
+      console.error('Error al cargar catálogo de Beats:', err);
+    } finally {
+      setIsLoadingTracks(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTracks(selectedGenre);
+  }, [selectedGenre]);
+
+  const handlePlayTrack = (track: Track) => {
+    const fullAudioUrl = track.audioUrl.startsWith('http')
+      ? track.audioUrl
+      : `${API_BASE_URL}${track.audioUrl}`;
+
+    if (currentlyPlayingId === track.id) {
+      if (isPlaying) {
+        audioRef.current?.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current?.play();
+        setIsPlaying(true);
+      }
+    } else {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      const newAudio = new Audio(fullAudioUrl);
+      audioRef.current = newAudio;
+
+      newAudio.play().then(() => {
+        setCurrentlyPlayingId(track.id);
+        setIsPlaying(true);
+      }).catch(err => {
+        console.error('Error al reproducir audio:', err);
+      });
+
+      newAudio.onended = () => {
+        setIsPlaying(false);
+        setCurrentlyPlayingId(null);
+      };
+    }
+  };
 
   const topCharts = [
     { id: '1', title: 'Nuevos y Destacados', icon: <Activity className="w-6 h-6 text-white" /> },
@@ -19,11 +82,11 @@ export default function InicioPage() {
   ];
 
   const tags = ['drake', 'trap', 'guitar', 'Travis Scott', 'lil baby', 'gunna', 'rnb', 'hip hop', 'Type beat', 'future', 'j cole', 'juice wrld'];
-
-  const filters = ['Todo el tiempo', 'Género', 'Tipo de pista', 'Precio', 'Estado de ánimo', 'BPM', 'Instrumentos', 'Tono', 'Duración', 'Energía', 'Vocales'];
+  const filters = ['Todo el tiempo', 'Trap', 'Hip Hop', 'Reggaeton', 'RnB', 'Pop', 'Dancehall'];
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans">
+      
       {/* Banner */}
       <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 border-b border-white/10 px-4 py-3 flex items-center justify-between text-sm">
         <div className="flex items-center gap-4 mx-auto max-w-7xl w-full">
@@ -57,7 +120,7 @@ export default function InicioPage() {
               <Search className="w-4 h-4 text-zinc-400 absolute left-4" />
               <input 
                 type="text" 
-                placeholder="Busca el beat de tu gusto" 
+                placeholder="Busca el beat de tu gusto..." 
                 className="w-full bg-transparent border-none py-2 pl-10 pr-24 text-sm text-white placeholder-zinc-500 focus:outline-none"
               />
               <div className="absolute right-2 flex items-center gap-2 border-l border-white/10 pl-2">
@@ -68,6 +131,15 @@ export default function InicioPage() {
           </div>
 
           <div className="flex items-center gap-4 text-sm font-medium">
+            {/* BOTÓN SUBIR BEAT - NAVBAR */}
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold px-4 py-2 rounded-full shadow-lg shadow-purple-500/30 transition transform hover:scale-105 active:scale-95"
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span>Subir Beat</span>
+            </button>
+
             <div className="hidden lg:flex items-center gap-4 text-zinc-400">
               <Link href="/register" className="hover:text-white transition">Registro</Link>
               <div className="w-[1px] h-4 bg-white/10"></div>
@@ -94,12 +166,28 @@ export default function InicioPage() {
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 flex flex-col gap-8">
         
-        {/* Section Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold tracking-tight">Mejores Rankings</h2>
-          <button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 transition px-3 py-1.5 rounded-lg text-sm font-medium">
-            Ocultar <ChevronDown className="w-4 h-4 rotate-180" />
-          </button>
+        {/* Section Header con botón prominente */}
+        <div className="flex items-center justify-between flex-wrap gap-4 border-b border-white/10 pb-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold tracking-tight">Catálogo de Beats</h2>
+            <span className="text-xs bg-purple-500/20 text-purple-400 border border-purple-500/30 px-2.5 py-1 rounded-full font-normal">
+              {tracks.length} {tracks.length === 1 ? 'Beat' : 'Beats'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-purple-500/30 transition transform hover:scale-105 active:scale-95"
+            >
+              <UploadCloud className="w-5 h-5" />
+              <span>+ Subir Nuevo Beat</span>
+            </button>
+
+            <button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 transition px-3 py-2 rounded-xl text-sm font-medium border border-white/10">
+              Filtros <ChevronDown className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Categories (Top Charts Carousel) */}
@@ -121,58 +209,159 @@ export default function InicioPage() {
               </span>
             </button>
           ))}
-          <div className="flex items-center justify-center pl-2">
-            <button className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition border border-white/10">
-              <ChevronDown className="w-5 h-5 -rotate-90 text-zinc-400" />
-            </button>
-          </div>
         </div>
 
         {/* Tags */}
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide mt-4">
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide mt-2">
           <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 shrink-0">
             <Search className="w-4 h-4 text-zinc-500" />
             <span className="text-sm text-zinc-500">Buscar etiquetas</span>
           </div>
           {tags.map((tag, i) => (
             <button key={i} className="bg-white/5 hover:bg-white/10 border border-white/10 transition rounded-full px-4 py-2 text-sm text-zinc-300 shrink-0 capitalize">
-              {tag}
+              #{tag}
             </button>
           ))}
-          <button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 transition rounded-full px-4 py-2 text-sm text-zinc-300 shrink-0 ml-auto">
-            <Activity className="w-4 h-4" /> Actualizar
-          </button>
         </div>
 
         {/* Filters */}
         <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          <button className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm font-medium shrink-0">
-            Todo el tiempo <ChevronDown className="w-4 h-4" />
-          </button>
-          {filters.slice(1).map((filter, i) => (
-            <button key={i} className="flex items-center gap-2 hover:bg-white/5 transition rounded-full px-4 py-1.5 text-sm text-zinc-400 hover:text-white shrink-0">
-              {filter} <ChevronDown className="w-4 h-4" />
-            </button>
-          ))}
-          
-          <div className="ml-auto flex items-center gap-2 shrink-0 border-l border-white/10 pl-4">
-            <button className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition border border-white/10">
-              <Star className="w-4 h-4 text-zinc-400" />
-            </button>
-            <div className="flex bg-white/5 rounded-lg border border-white/10 p-0.5">
-              <button className="p-1.5 rounded-md bg-white/10"><Menu className="w-4 h-4 text-white" /></button>
-              <button className="p-1.5 rounded-md hover:bg-white/10"><Grid className="w-4 h-4 text-zinc-400" /></button>
-            </div>
-          </div>
+          {filters.map((filter, i) => {
+            const isSelected = (i === 0 && !selectedGenre) || selectedGenre === filter;
+            return (
+              <button
+                key={i}
+                onClick={() => setSelectedGenre(i === 0 ? undefined : filter)}
+                className={`flex items-center gap-2 transition rounded-full px-4 py-1.5 text-sm font-medium shrink-0 ${
+                  isSelected
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                    : 'bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 border border-white/10'
+                }`}
+              >
+                {filter}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Placeholder Main content */}
-        <div className="flex-1 flex items-center justify-center border border-white/5 border-dashed rounded-3xl mt-8 py-20 bg-white/[0.02]">
-          <div className="flex flex-col items-center gap-4 text-zinc-500">
-            <Flame className="w-12 h-12" />
-            <p className="font-medium">Los beats aparecerán aquí.</p>
+        {/* Lista/Cuadrícula de Beats Dinámica */}
+        {isLoadingTracks ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4 text-zinc-400">
+            <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+            <p>Cargando Beats...</p>
           </div>
-        </div>
+        ) : tracks.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center border border-white/10 border-dashed rounded-3xl py-20 bg-white/[0.01] gap-4 text-center px-4">
+            <div className="w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <Music className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-bold text-white">No se encontraron Beats aún</h3>
+            <p className="text-sm text-zinc-400 max-w-md">
+              Sé el primer productor en publicar su sonido en OZIRIS. Haz clic en el botón de abajo para empezar.
+            </p>
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="mt-2 flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium px-6 py-2.5 rounded-full shadow-lg transition"
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span>Publicar mi primer Beat</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tracks.map((track) => {
+              const isPlayingThis = currentlyPlayingId === track.id && isPlaying;
+              const coverPath = track.coverUrl
+                ? (track.coverUrl.startsWith('http') ? track.coverUrl : `${API_BASE_URL}${track.coverUrl}`)
+                : null;
+
+              return (
+                <div
+                  key={track.id}
+                  className="group relative bg-[#121216] border border-white/10 hover:border-purple-500/40 rounded-2xl p-4 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/5 flex flex-col justify-between"
+                >
+                  <div className="flex gap-4 items-start">
+                    {/* Cover Art / Play Button Overlay */}
+                    <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-zinc-800 shrink-0 border border-white/10 group-hover:border-purple-500/30 transition">
+                      {coverPath ? (
+                        <img
+                          src={coverPath}
+                          alt={track.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/40 to-blue-900/40 text-zinc-500">
+                          <Music className="w-8 h-8 text-purple-400/60" />
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => handlePlayTrack(track)}
+                        className={`absolute inset-0 m-auto w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${
+                          isPlayingThis
+                            ? 'bg-purple-600 text-white scale-100'
+                            : 'bg-black/60 text-white opacity-90 group-hover:opacity-100 hover:scale-110 hover:bg-purple-600'
+                        }`}
+                      >
+                        {isPlayingThis ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                      </button>
+                    </div>
+
+                    {/* Metadata */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                          {track.genre || 'Beat'}
+                        </span>
+                        <span className="text-sm font-bold text-emerald-400">
+                          ${Number(track.price).toFixed(2)}
+                        </span>
+                      </div>
+
+                      <h4 className="font-bold text-white text-base truncate mt-1 group-hover:text-purple-300 transition">
+                        {track.title}
+                      </h4>
+
+                      <p className="text-xs text-zinc-400 truncate mt-0.5">
+                        Por <span className="text-zinc-200 font-medium">{track.producer?.name || 'Productor OZIRIS'}</span>
+                      </p>
+
+                      <div className="flex items-center gap-3 text-xs text-zinc-400 mt-2">
+                        {track.bpm && <span>{track.bpm} BPM</span>}
+                        {track.bpm && track.key && <span>•</span>}
+                        {track.key && <span>{track.key}</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tags & Action Footer */}
+                  <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
+                    <div className="flex gap-1.5 overflow-hidden max-w-[70%]">
+                      {track.tags && track.tags.length > 0 ? (
+                        track.tags.slice(0, 2).map((t, idx) => (
+                          <span key={idx} className="text-[11px] text-zinc-400 bg-white/5 px-2 py-0.5 rounded-full truncate">
+                            #{t}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[11px] text-zinc-500 italic">OZIRIS Exclusive</span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => handlePlayTrack(track)}
+                      className="text-xs font-semibold text-purple-400 hover:text-purple-300 transition flex items-center gap-1"
+                    >
+                      {isPlayingThis ? 'Pausar' : 'Escuchar'}
+                    </button>
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+        )}
+
       </main>
 
       {/* Sidebar Menu Overlay */}
@@ -188,6 +377,17 @@ export default function InicioPage() {
             </div>
             
             <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsUploadModalOpen(true);
+                }}
+                className="flex items-center gap-4 p-3 rounded-xl bg-purple-600/20 border border-purple-500/30 hover:bg-purple-600/30 transition text-purple-200"
+              >
+                <UploadCloud className="w-5 h-5 text-purple-400" />
+                <span className="font-medium text-base">Subir Beat</span>
+              </button>
+
               <Link href="/planes" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition text-zinc-200 hover:text-white">
                 <Star className="w-5 h-5 text-purple-400" />
                 <span className="font-medium text-base">Ver Planes</span>
@@ -203,6 +403,16 @@ export default function InicioPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Subida de Beat */}
+      <UploadBeatModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onSuccess={(newTrack) => {
+          loadTracks(selectedGenre);
+        }}
+      />
+
     </div>
   );
 }
