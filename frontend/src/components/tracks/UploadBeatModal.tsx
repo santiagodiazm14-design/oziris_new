@@ -32,6 +32,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   const audioInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -62,13 +63,22 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
 
   const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setErrorMessage(null);
+    setPreviewError(null);
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate by extension
     const validExts = ['mp3', 'wav'];
     const fileExt = file.name.split('.').pop()?.toLowerCase();
     if (!fileExt || !validExts.includes(fileExt)) {
       setErrorMessage('Por favor selecciona un archivo de audio válido (.mp3 o .wav).');
+      return;
+    }
+
+    // Validate by MIME type (WhatsApp audio is .opus disguised as .mp3)
+    const validMimes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/wave', 'audio/x-wav'];
+    if (file.type && !validMimes.includes(file.type)) {
+      setErrorMessage(`Formato no soportado (${file.type}). Por favor usa un archivo .mp3 o .wav real. Los audios de WhatsApp no son compatibles.`);
       return;
     }
 
@@ -106,10 +116,13 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
       audioRef.current.pause();
       setIsPlayingPreview(false);
     } else {
+      setPreviewError(null);
       audioRef.current.play().then(() => {
         setIsPlayingPreview(true);
-      }).catch(err => {
+      }).catch((err) => {
         console.error('Error al reproducir preview:', err);
+        setPreviewError('No se puede reproducir este archivo. Verifica que sea un MP3 o WAV válido.');
+        setIsPlayingPreview(false);
       });
     }
   };
@@ -147,10 +160,10 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
       formData.append('key', keySignature);
       formData.append('price', price);
       formData.append('tags', tags);
-      formData.append('audioFile', audioFile);
+      formData.append('audio', audioFile);
 
       if (coverFile) {
-        formData.append('coverImage', coverFile);
+        formData.append('cover', coverFile);
       }
 
       const newTrack = await uploadBeat(formData, (progress) => {
@@ -256,23 +269,36 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
 
                   {/* Reproductor de Previsualización Local */}
                   {audioPreviewUrl && (
-                    <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-white/10">
-                      <button
-                        type="button"
-                        onClick={togglePlayPreview}
-                        className="p-2 rounded-full bg-purple-600 hover:bg-purple-500 text-white transition flex items-center justify-center"
-                      >
-                        {isPlayingPreview ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-                      </button>
-                      <span className="text-xs font-medium text-zinc-300">
-                        {isPlayingPreview ? 'Reproduciendo vista previa...' : 'Escuchar vista previa'}
-                      </span>
-                      <audio
-                        ref={audioRef}
-                        src={audioPreviewUrl}
-                        onEnded={() => setIsPlayingPreview(false)}
-                        className="hidden"
-                      />
+                    <div className="flex flex-col gap-2">
+                      {!previewError ? (
+                        <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-white/10">
+                          <button
+                            type="button"
+                            onClick={togglePlayPreview}
+                            className="p-2 rounded-full bg-purple-600 hover:bg-purple-500 text-white transition flex items-center justify-center"
+                          >
+                            {isPlayingPreview ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                          </button>
+                          <span className="text-xs font-medium text-zinc-300">
+                            {isPlayingPreview ? 'Reproduciendo vista previa...' : 'Escuchar vista previa'}
+                          </span>
+                          <audio
+                            ref={audioRef}
+                            src={audioPreviewUrl}
+                            onEnded={() => setIsPlayingPreview(false)}
+                            onError={() => {
+                              setPreviewError('Formato de audio no soportado por el navegador. El archivo se subirá igual.');
+                              setIsPlayingPreview(false);
+                            }}
+                            className="hidden"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-xs text-yellow-400/80 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>{previewError}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

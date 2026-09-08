@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -17,7 +17,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-export default function DatosPagoPage() {
+function DatosPagoContent() {
   const searchParams = useSearchParams();
 
   const metodo = searchParams.get("metodo") || "PSE";
@@ -60,10 +60,6 @@ export default function DatosPagoPage() {
       return <CreditCard className="w-6 h-6 text-purple-400" />;
     }
 
-    if (metodo === "Nequi") {
-      return <Smartphone className="w-6 h-6 text-pink-400" />;
-    }
-
     return <Building2 className="w-6 h-6 text-blue-400" />;
   };
 
@@ -72,15 +68,7 @@ export default function DatosPagoPage() {
       return "Completa tus datos para continuar con el pago por PSE.";
     }
 
-    if (metodo === "Tarjeta") {
-      return "Completa los datos necesarios para realizar tu pago.";
-    }
-
-    if (metodo === "Nequi") {
-      return "Ingresa tus datos para continuar con el pago por Nequi.";
-    }
-
-    return "Completa tus datos para continuar con el pago por Bancolombia.";
+    return "Completa los datos de tu tarjeta para realizar el pago de forma segura.";
   };
 
   return (
@@ -375,37 +363,6 @@ export default function DatosPagoPage() {
               </div>
             )}
 
-            {/* NEQUI */}
-            {metodo === "Nequi" && (
-              <div>
-
-                <label className="block text-sm font-medium text-zinc-300 mb-2">
-                  Número de celular Nequi
-                </label>
-
-                <div className="relative">
-
-                  <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-
-                  <input
-                    type="tel"
-                    required
-                    value={formData.celularNequi}
-                    onChange={(e) =>
-                      actualizarCampo(
-                        "celularNequi",
-                        e.target.value
-                      )
-                    }
-                    placeholder="300 000 0000"
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder:text-zinc-600 outline-none focus:border-purple-500 transition"
-                  />
-
-                </div>
-
-              </div>
-            )}
-
             {/* TARJETA */}
             {metodo === "Tarjeta" && (
               <div className="space-y-5">
@@ -524,29 +481,6 @@ export default function DatosPagoPage() {
               </div>
             )}
 
-            {/* BANCOLOMBIA */}
-            {metodo === "Bancolombia" && (
-              <div>
-
-                <label className="block text-sm font-medium text-zinc-300 mb-2">
-                  Banco
-                </label>
-
-                <input
-                  type="text"
-                  value="Bancolombia"
-                  readOnly
-                  className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-zinc-400 outline-none"
-                />
-
-                <p className="text-xs text-zinc-500 mt-3">
-                  Al continuar se preparará la información necesaria
-                  para realizar la transferencia.
-                </p>
-
-              </div>
-            )}
-
           </div>
 
           {/* BOTON */}
@@ -607,5 +541,19 @@ export default function DatosPagoPage() {
       </section>
 
     </main>
+  );
+}
+
+export default function DatosPagoPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+          <p className="text-zinc-400">Cargando...</p>
+        </main>
+      }
+    >
+      <DatosPagoContent />
+    </Suspense>
   );
 }

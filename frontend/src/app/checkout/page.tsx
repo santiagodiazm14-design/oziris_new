@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -18,7 +18,7 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import { fetchTrackById, Track } from "@/services/api";
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -62,14 +62,12 @@ export default function CheckoutPage() {
     }).format(price);
   };
 
-  // IR A LA PÁGINA DE DATOS DE PAGO
-  const continuarConMetodo = (metodo: string) => {
-    if (!beatId) return;
-
-    setPaymentMethod(metodo);
+  // IR A LA PÁGINA DE DATOS DE PAGO AL HACER CLIC EN EL BOTÓN PRINCIPAL
+  const irADatosPago = () => {
+    if (!beatId || !paymentMethod) return;
 
     router.push(
-      `/datos-pago?metodo=${encodeURIComponent(metodo)}&beat=${encodeURIComponent(beatId)}`
+      `/datos-pago?metodo=${encodeURIComponent(paymentMethod)}&beat=${encodeURIComponent(beatId)}`
     );
   };
 
@@ -350,22 +348,22 @@ export default function CheckoutPage() {
 
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 {/* PSE */}
                 <button
                   type="button"
-                  onClick={() => continuarConMetodo("PSE")}
-                  className={`group text-left p-5 rounded-xl border transition ${
+                  onClick={() => setPaymentMethod("PSE")}
+                  className={`group text-left p-6 rounded-2xl border transition-all duration-200 cursor-pointer ${
                     paymentMethod === "PSE"
-                      ? "border-purple-500 bg-purple-500/10"
-                      : "bg-white/[0.03] border-white/10 hover:border-purple-500/50 hover:bg-purple-500/5"
+                      ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10 ring-2 ring-purple-500/20"
+                      : "bg-white/[0.03] border-white/10 hover:border-purple-500/40 hover:bg-purple-500/5"
                   }`}
                 >
 
                   <div className="flex items-center gap-4">
 
-                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
 
                       <Building2 className="w-6 h-6 text-blue-400" />
 
@@ -373,23 +371,31 @@ export default function CheckoutPage() {
 
                     <div>
 
-                      <h3 className="font-bold">
+                      <h3 className="font-bold text-lg">
                         PSE
                       </h3>
 
                       <p className="text-xs text-zinc-400 mt-1">
-                        Pago desde tu cuenta bancaria
+                        Débito desde tu cuenta bancaria
                       </p>
 
                     </div>
 
                   </div>
 
-                  <div className="flex items-center gap-2 mt-4 text-xs text-emerald-400">
+                  <div className="flex items-center gap-2 mt-5 text-xs font-semibold">
 
-                    <CheckCircle2 className="w-4 h-4" />
-
-                    Continuar con PSE
+                    {paymentMethod === "PSE" ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span className="text-emerald-400">Seleccionado</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-4 h-4 rounded-full border border-zinc-600 group-hover:border-purple-400 transition" />
+                        <span className="text-zinc-400 group-hover:text-zinc-200">Seleccionar PSE</span>
+                      </>
+                    )}
 
                   </div>
 
@@ -398,17 +404,17 @@ export default function CheckoutPage() {
                 {/* TARJETA */}
                 <button
                   type="button"
-                  onClick={() => continuarConMetodo("Tarjeta")}
-                  className={`group text-left p-5 rounded-xl border transition ${
+                  onClick={() => setPaymentMethod("Tarjeta")}
+                  className={`group text-left p-6 rounded-2xl border transition-all duration-200 cursor-pointer ${
                     paymentMethod === "Tarjeta"
-                      ? "border-purple-500 bg-purple-500/10"
-                      : "bg-white/[0.03] border-white/10 hover:border-purple-500/50 hover:bg-purple-500/5"
+                      ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10 ring-2 ring-purple-500/20"
+                      : "bg-white/[0.03] border-white/10 hover:border-purple-500/40 hover:bg-purple-500/5"
                   }`}
                 >
 
                   <div className="flex items-center gap-4">
 
-                    <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
 
                       <CreditCard className="w-6 h-6 text-purple-400" />
 
@@ -416,109 +422,31 @@ export default function CheckoutPage() {
 
                     <div>
 
-                      <h3 className="font-bold">
+                      <h3 className="font-bold text-lg">
                         Tarjeta
                       </h3>
 
                       <p className="text-xs text-zinc-400 mt-1">
-                        Débito o crédito
+                        Tarjeta de crédito o débito
                       </p>
 
                     </div>
 
                   </div>
 
-                  <div className="flex items-center gap-2 mt-4 text-xs text-emerald-400">
+                  <div className="flex items-center gap-2 mt-5 text-xs font-semibold">
 
-                    <CheckCircle2 className="w-4 h-4" />
-
-                    Continuar con tarjeta
-
-                  </div>
-
-                </button>
-
-                {/* NEQUI */}
-                <button
-                  type="button"
-                  onClick={() => continuarConMetodo("Nequi")}
-                  className={`group text-left p-5 rounded-xl border transition ${
-                    paymentMethod === "Nequi"
-                      ? "border-purple-500 bg-purple-500/10"
-                      : "bg-white/[0.03] border-white/10 hover:border-purple-500/50 hover:bg-purple-500/5"
-                  }`}
-                >
-
-                  <div className="flex items-center gap-4">
-
-                    <div className="w-12 h-12 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
-
-                      <Smartphone className="w-6 h-6 text-pink-400" />
-
-                    </div>
-
-                    <div>
-
-                      <h3 className="font-bold">
-                        Nequi
-                      </h3>
-
-                      <p className="text-xs text-zinc-400 mt-1">
-                        Paga desde tu cuenta Nequi
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-4 text-xs text-emerald-400">
-
-                    <CheckCircle2 className="w-4 h-4" />
-
-                    Continuar con Nequi
-
-                  </div>
-
-                </button>
-
-                {/* BANCOLOMBIA */}
-                <button
-                  type="button"
-                  onClick={() => continuarConMetodo("Bancolombia")}
-                  className={`group text-left p-5 rounded-xl border transition ${
-                    paymentMethod === "Bancolombia"
-                      ? "border-purple-500 bg-purple-500/10"
-                      : "bg-white/[0.03] border-white/10 hover:border-purple-500/50 hover:bg-purple-500/5"
-                  }`}
-                >
-
-                  <div className="flex items-center gap-4">
-
-                    <div className="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
-
-                      <Building2 className="w-6 h-6 text-yellow-400" />
-
-                    </div>
-
-                    <div>
-
-                      <h3 className="font-bold">
-                        Bancolombia
-                      </h3>
-
-                      <p className="text-xs text-zinc-400 mt-1">
-                        Transferencia bancaria
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-4 text-xs text-emerald-400">
-
-                    <CheckCircle2 className="w-4 h-4" />
-
-                    Continuar con Bancolombia
+                    {paymentMethod === "Tarjeta" ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span className="text-emerald-400">Seleccionado</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-4 h-4 rounded-full border border-zinc-600 group-hover:border-purple-400 transition" />
+                        <span className="text-zinc-400 group-hover:text-zinc-200">Seleccionar Tarjeta</span>
+                      </>
+                    )}
 
                   </div>
 
@@ -527,15 +455,20 @@ export default function CheckoutPage() {
               </div>
 
               {/* MÉTODO SELECCIONADO */}
-              <div className="mt-6 p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
+              <div className="mt-6 p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 flex items-center justify-between">
 
-                <p className="text-sm text-zinc-400">
-                  Método seleccionado
-                </p>
+                <div>
+                  <p className="text-xs text-zinc-400">
+                    Método de pago seleccionado
+                  </p>
+                  <p className="text-lg font-bold text-purple-400 mt-0.5">
+                    {paymentMethod}
+                  </p>
+                </div>
 
-                <p className="text-lg font-bold text-purple-400 mt-1">
-                  {paymentMethod}
-                </p>
+                <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold">
+                  Listo para continuar
+                </span>
 
               </div>
 
@@ -544,8 +477,8 @@ export default function CheckoutPage() {
 
                 <button
                   type="button"
-                  onClick={() => continuarConMetodo(paymentMethod)}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/20 transition transform hover:scale-[1.01]"
+                  onClick={irADatosPago}
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/20 transition transform hover:scale-[1.01] cursor-pointer"
                 >
 
                   <Lock className="w-5 h-5" />
@@ -576,5 +509,22 @@ export default function CheckoutPage() {
       </section>
 
     </main>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="w-10 h-10 text-purple-400 animate-spin mx-auto mb-4" />
+            <p className="text-zinc-400">Cargando información del Beat...</p>
+          </div>
+        </main>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
   );
 }

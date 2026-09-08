@@ -24,11 +24,13 @@ import {
 } from "lucide-react";
 import { fetchTracks, Track } from "@/services/api";
 import UploadBeatModal from "@/components/tracks/UploadBeatModal";
+import { useCart } from "@/context/CartContext";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function InicioPage() {
+  const { cartCount, toggleCart, addToCart, isInCart } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -305,16 +307,22 @@ export default function InicioPage() {
             </div>
 
             {/* =================================================
-                BOLSITA - FORMAS DE PAGO
+                CARRITO DE COMPRAS EN EL HEADER
             ================================================== */}
-            <Link
-              href="/formas-pago"
-              className="flex items-center justify-center text-zinc-400 hover:text-white transition ml-2 cursor-pointer"
-              title="Formas de pago"
-              aria-label="Formas de pago"
+            <button
+              onClick={toggleCart}
+              type="button"
+              className="relative flex items-center justify-center p-2.5 text-zinc-300 hover:text-white hover:bg-white/10 rounded-xl transition ml-2 cursor-pointer group"
+              title="Carrito de compras"
+              aria-label="Carrito de compras"
             >
-              <ShoppingBag className="w-5 h-5" />
-            </Link>
+              <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/50 animate-in zoom-in duration-200">
+                  {cartCount}
+                </span>
+              )}
+            </button>
 
           </div>
 
@@ -730,15 +738,20 @@ export default function InicioPage() {
                       </button>
 
                       {/* =================================================
-                          COMPRAR
+                          AGREGAR AL CARRITO / COMPRAR
                       ================================================== */}
-                      <Link
-                        href={`/checkout?beat=${track.id}`}
-                        className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-lg shadow-purple-500/20 transition transform hover:scale-105"
+                      <button
+                        onClick={() => addToCart(track)}
+                        type="button"
+                        className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition transform hover:scale-105 ${
+                          isInCart(track.id)
+                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
+                            : "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg shadow-purple-500/20"
+                        }`}
                       >
                         <ShoppingBag className="w-3.5 h-3.5" />
-                        Comprar
-                      </Link>
+                        {isInCart(track.id) ? "En el carrito" : "Agregar"}
+                      </button>
 
                     </div>
 

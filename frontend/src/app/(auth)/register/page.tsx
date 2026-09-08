@@ -13,8 +13,8 @@ export default function RegisterPage() {
   // Función que maneja el envío del formulario de registro
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault(); // Previene que la página se refresque
-    // Simulamos un registro exitoso y enviamos al usuario a elegir su membresía
-    router.push('/planes');
+    // Simulamos un registro exitoso y enviamos al usuario directamente a inicio
+    router.push('/inicio');
   };
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

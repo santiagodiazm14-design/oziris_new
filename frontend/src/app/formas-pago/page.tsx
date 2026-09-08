@@ -15,20 +15,14 @@ export default function FormasPagoPage() {
     {
       title: "PSE",
       description:
-        "Realiza tu pago directamente desde tu cuenta bancaria de forma segura.",
+        "Realiza tu pago directamente desde tu cuenta bancaria a través de PSE.",
       icon: <Building2 className="w-8 h-8" />,
     },
     {
-      title: "Tarjetas",
+      title: "Tarjetas (Crédito y Débito)",
       description:
-        "Paga con tarjetas débito o crédito habilitadas para compras en línea.",
+        "Paga de forma rápida y segura con tus tarjetas Visa, Mastercard o cualquier franquicia.",
       icon: <CreditCard className="w-8 h-8" />,
-    },
-    {
-      title: "Nequi",
-      description:
-        "Utiliza tu cuenta Nequi para realizar el pago de tus Beats.",
-      icon: <Smartphone className="w-8 h-8" />,
     },
   ];
 
@@ -64,13 +58,12 @@ export default function FormasPagoPage() {
           </h1>
 
           <p className="text-zinc-400 text-base md:text-lg">
-            Compra tus Beats favoritos de Oziris utilizando diferentes
-            alternativas de pago de manera rápida y segura.
+            Aceptamos los métodos de pago más confiables y seguros para que obtengas tus Beats al instante.
           </p>
         </div>
 
         {/* Métodos */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {paymentMethods.map((method) => (
             <div
               key={method.title}

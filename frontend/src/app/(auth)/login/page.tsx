@@ -13,8 +13,8 @@ export default function LoginPage() {
   // Función que se ejecuta al enviar el formulario (onSubmit)
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault(); // Evita que la página se recargue (comportamiento por defecto)
-    // Redirige al usuario a la vista de planes después de un "login exitoso"
-    router.push('/planes');
+    // Redirige al usuario a la vista principal de inicio después del login
+    router.push('/inicio');
   };
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
