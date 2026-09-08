@@ -44,6 +44,7 @@ export default function InicioPage() {
     null
   );
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const loadTracks = async (genre?: string) => {
@@ -65,6 +66,7 @@ export default function InicioPage() {
   }, [selectedGenre]);
 
   const handlePlayTrack = (track: Track) => {
+    setAudioError(null);
     const fullAudioUrl = track.audioUrl.startsWith("http")
       ? track.audioUrl
       : `${API_BASE_URL}${track.audioUrl}`;
@@ -94,6 +96,10 @@ export default function InicioPage() {
         })
         .catch((err) => {
           console.error("Error al reproducir audio:", err);
+          setAudioError(`No se puede reproducir "${track.title}". El archivo de audio no es compatible con el navegador.`);
+          setCurrentlyPlayingId(null);
+          setIsPlaying(false);
+          setTimeout(() => setAudioError(null), 4000);
         });
 
       newAudio.onended = () => {
@@ -169,6 +175,14 @@ export default function InicioPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans">
+
+      {/* Toast de error de audio */}
+      {audioError && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-5 py-3 bg-red-900/90 border border-red-500/40 rounded-2xl shadow-2xl backdrop-blur-sm text-sm text-red-200 max-w-md animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <span className="text-red-400 shrink-0">⚠️</span>
+          <span>{audioError}</span>
+        </div>
+      )}
 
       {/* =====================================================
           BANNER
