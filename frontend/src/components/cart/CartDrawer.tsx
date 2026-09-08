@@ -6,6 +6,14 @@ import Image from "next/image";
 import { X, Trash2, ShoppingBag, ArrowRight, Music2, ShieldCheck } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+function getImageUrl(url?: string): string | null {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  return `${API_BASE_URL}${url}`;
+}
+
 export default function CartDrawer() {
   const { cartItems, isCartOpen, closeCart, removeFromCart, totalPrice, cartCount } = useCart();
 
@@ -81,9 +89,9 @@ export default function CartDrawer() {
                 >
                   {/* Portada */}
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-purple-900/30 border border-purple-500/20">
-                    {track.coverUrl ? (
+                    {getImageUrl(track.coverUrl) ? (
                       <Image
-                        src={track.coverUrl}
+                        src={getImageUrl(track.coverUrl)!}
                         alt={track.title}
                         fill
                         className="object-cover"

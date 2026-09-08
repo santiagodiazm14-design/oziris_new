@@ -18,6 +18,14 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import { fetchTrackById, Track } from "@/services/api";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+function getImageUrl(url?: string): string | null {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  return `${API_BASE_URL}${url}`;
+}
+
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -192,10 +200,10 @@ function CheckoutContent() {
               {/* PORTADA */}
               <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/60 to-blue-900/60 border border-purple-500/20 mb-6">
 
-                {track.coverUrl ? (
+                {getImageUrl(track.coverUrl) ? (
 
                   <Image
-                    src={track.coverUrl}
+                    src={getImageUrl(track.coverUrl)!}
                     alt={track.title}
                     fill
                     className="object-cover"
