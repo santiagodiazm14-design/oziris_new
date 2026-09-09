@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, UploadCloud, Music, Image as ImageIcon, CheckCircle, AlertCircle, Play, Pause, Loader2 } from 'lucide-react';
 import { uploadBeat, Track } from '@/services/api';
 
+//cambio hecho mio
+
 interface UploadBeatModalProps {
   isOpen: boolean;
   onClose: () => void;
