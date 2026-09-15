@@ -5,6 +5,8 @@ import { X, UploadCloud, Music, Image as ImageIcon, CheckCircle, AlertCircle, Pl
 import { uploadBeat, Track } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 
+//cambio hecho mio
+
 interface UploadBeatModalProps {
   isOpen: boolean;
   onClose: () => void;
