@@ -8,7 +8,7 @@ exports.default = (0, config_1.defineConfig)({
         path: "prisma/migrations",
     },
     datasource: {
-        url: process.env["DATABASE_URL"],
+        url: process.env["DATABASE_URL"] || "postgresql://dev:devpassword@localhost:5432/oziris_db?schema=public",
     },
 });
 //# sourceMappingURL=prisma.config.js.map

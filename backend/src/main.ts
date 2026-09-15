@@ -5,7 +5,7 @@ import { existsSync, mkdirSync } from 'fs';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const uploadsDir = join(__dirname, '..', 'uploads');
+  const uploadsDir = join(process.cwd(), 'uploads');
   if (!existsSync(uploadsDir)) {
     mkdirSync(uploadsDir, { recursive: true });
   }
@@ -15,6 +15,7 @@ async function bootstrap() {
   app.useStaticAssets(uploadsDir, {
     prefix: '/uploads/',
   });
+
   await app.listen(process.env.PORT ?? 4000);
 }
 bootstrap();

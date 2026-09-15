@@ -16,6 +16,8 @@ export interface Track {
         id: string;
         name: string;
         email: string;
+        avatarUrl?: string | null;
+        artistName?: string | null;
     };
     createdAt: string;
     updatedAt: string;
@@ -26,7 +28,9 @@ export declare class TracksService {
     constructor(prisma: PrismaService);
     findAll(genre?: string): Promise<Track[]>;
     findOne(id: string): Promise<Track>;
-    create(data: Partial<Track>): Promise<Track>;
+    create(data: Partial<Track> & {
+        producerId?: string;
+    }): Promise<Track>;
     remove(id: string): Promise<{
         success: boolean;
     }>;

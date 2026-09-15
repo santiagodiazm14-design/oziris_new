@@ -21,19 +21,31 @@ import {
   LogOut,
   UploadCloud,
   Music,
+  Shield,
+  User as UserIcon,
+  Heart,
+  Sparkles,
 } from "lucide-react";
-import { fetchTracks, Track } from "@/services/api";
+import { fetchTracks, Track, fetchFavoritesApi, toggleFavoriteApi } from "@/services/api";
 import UploadBeatModal from "@/components/tracks/UploadBeatModal";
+import ProfileModal from "@/components/profile/ProfileModal";
+import FavoritesDrawer from "@/components/favorites/FavoritesDrawer";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function InicioPage() {
   const { cartCount, toggleCart, addToCart, isInCart } = useCart();
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
+
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [favorites, setFavorites] = useState<Track[]>([]);
   const [isLoadingTracks, setIsLoadingTracks] = useState(true);
   const [selectedGenre, setSelectedGenre] = useState<string | undefined>(
     undefined
@@ -46,6 +58,51 @@ export default function InicioPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("oziris_auth_token") : null;
+
+  const loadFavorites = async () => {
+    if (!token || !isAuthenticated) return;
+    try {
+      const favData = await fetchFavoritesApi(token);
+      if (Array.isArray(favData)) {
+        // If favData is array of tracks or track IDs
+        const favTracks = favData.map((f: any) => (typeof f === 'string' ? tracks.find((t) => t.id === f) : f)).filter(Boolean);
+        setFavorites(favTracks);
+      }
+    } catch (e) {
+      console.error("Error loading favorites:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadFavorites();
+    } else {
+      setFavorites([]);
+    }
+  }, [isAuthenticated, token, tracks]);
+
+  const handleToggleFavorite = async (track: Track) => {
+    if (!isAuthenticated || !token) {
+      setAudioError("Inicia sesión para guardar tus Beats favoritos.");
+      setTimeout(() => setAudioError(null), 3000);
+      return;
+    }
+
+    try {
+      const res = await toggleFavoriteApi(token, track.id);
+      if (res.isFavorite) {
+        setFavorites((prev) => [...prev.filter((f) => f.id !== track.id), track]);
+      } else {
+        setFavorites((prev) => prev.filter((f) => f.id !== track.id));
+      }
+    } catch (err: any) {
+      console.error("Error toggling favorite:", err);
+    }
+  };
+
+  const isFavorite = (trackId: string) => favorites.some((f) => f.id === trackId);
 
   const loadTracks = async (genre?: string) => {
     try {
@@ -299,26 +356,90 @@ export default function InicioPage() {
               <span>Subir Beat</span>
             </button>
 
-            {/* REGISTRO / LOGIN */}
-            <div className="hidden lg:flex items-center gap-4 text-zinc-400">
+            {/* USUARIO AUTENTICADO / REGISTRO / LOGIN */}
+            {isAuthenticated ? (
+              <div className="hidden lg:flex items-center gap-3 text-zinc-300">
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/50 hover:to-blue-600/50 text-purple-300 border border-purple-500/40 px-3 py-1.5 rounded-full text-xs font-bold transition shadow-sm"
+                  >
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>Panel Admin</span>
+                  </Link>
+                )}
 
-              <Link
-                href="/register"
-                className="hover:text-white transition"
-              >
-                Registro
-              </Link>
+                {/* BOTÓN DE FAVORITOS (CORAZÓN ❤️) */}
+                <button
+                  onClick={() => setIsFavoritesOpen(true)}
+                  type="button"
+                  className="relative flex items-center justify-center p-2.5 bg-white/5 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-white/10 hover:border-rose-500/40 rounded-full transition cursor-pointer group"
+                  title="Mis Beats Favoritos"
+                >
+                  <Heart className="w-4 h-4 fill-rose-500 group-hover:scale-110 transition-transform" />
+                  {favorites.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/50 animate-in zoom-in duration-200">
+                      {favorites.length}
+                    </span>
+                  )}
+                </button>
 
-              <div className="w-[1px] h-4 bg-white/10"></div>
+                {/* BOTÓN DE PERFIL DE USUARIO */}
+                <button
+                  onClick={() => setIsProfileModalOpen(true)}
+                  type="button"
+                  className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/40 px-3 py-1.5 rounded-full transition cursor-pointer group"
+                  title="Editar Perfil de Usuario"
+                >
+                  <div className="w-6 h-6 rounded-full bg-purple-500/30 text-purple-200 text-xs font-bold flex items-center justify-center overflow-hidden border border-purple-500/40">
+                    {user?.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl.startsWith('http') ? user.avatarUrl : `${API_BASE_URL}${user.avatarUrl}`}
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user?.name?.charAt(0).toUpperCase() || "U"
+                    )}
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-xs font-semibold text-white max-w-[100px] truncate group-hover:text-purple-300 transition">
+                      {user?.artistName || user?.name}
+                    </span>
+                  </div>
+                  <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded font-mono">
+                    {user?.role}
+                  </span>
+                </button>
 
-              <Link
-                href="/login"
-                className="hover:text-white transition"
-              >
-                Iniciar Sesión
-              </Link>
+                {/* BOTÓN CERRAR SESIÓN */}
+                <button
+                  onClick={logout}
+                  className="p-2 text-zinc-400 hover:text-red-400 hover:bg-white/10 rounded-xl transition"
+                  title="Cerrar Sesión"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="hidden lg:flex items-center gap-4 text-zinc-400">
+                <Link
+                  href="/register"
+                  className="hover:text-white transition"
+                >
+                  Registro
+                </Link>
 
-            </div>
+                <div className="w-[1px] h-4 bg-white/10"></div>
+
+                <Link
+                  href="/login"
+                  className="hover:text-white transition"
+                >
+                  Iniciar Sesión
+                </Link>
+              </div>
+            )}
 
             {/* =================================================
                 CARRITO DE COMPRAS EN EL HEADER
@@ -740,6 +861,20 @@ export default function InicioPage() {
                     {/* BOTONES */}
                     <div className="flex items-center gap-2">
 
+                      {/* CORAZÓN FAVORITO */}
+                      <button
+                        onClick={() => handleToggleFavorite(track)}
+                        type="button"
+                        className={`p-2 rounded-lg transition transform active:scale-90 ${
+                          isFavorite(track.id)
+                            ? "bg-rose-500/20 text-rose-400 border border-rose-500/40"
+                            : "bg-white/5 hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 border border-white/10"
+                        }`}
+                        title={isFavorite(track.id) ? "Quitar de favoritos" : "Guardar en favoritos"}
+                      >
+                        <Heart className={`w-3.5 h-3.5 ${isFavorite(track.id) ? "fill-rose-500" : ""}`} />
+                      </button>
+
                       {/* ESCUCHAR */}
                       <button
                         onClick={() => handlePlayTrack(track)}
@@ -751,9 +886,7 @@ export default function InicioPage() {
                           : "Escuchar"}
                       </button>
 
-                      {/* =================================================
-                          AGREGAR AL CARRITO / COMPRAR
-                      ================================================== */}
+                      {/* AGREGAR AL CARRITO */}
                       <button
                         onClick={() => addToCart(track)}
                         type="button"
@@ -869,10 +1002,13 @@ export default function InicioPage() {
               <div className="h-[1px] bg-white/10 my-2"></div>
 
               {/* CERRAR SESIÓN */}
-              <Link
-                href="/login"
-                onClick={() => setIsMenuOpen(false)}
-                className="flex items-center gap-4 p-3 rounded-xl hover:bg-red-500/10 transition text-red-400 hover:text-red-300"
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  logout();
+                }}
+                type="button"
+                className="flex items-center gap-4 p-3 rounded-xl hover:bg-red-500/10 transition text-red-400 hover:text-red-300 w-full text-left"
               >
 
                 <LogOut className="w-5 h-5" />
@@ -881,7 +1017,7 @@ export default function InicioPage() {
                   Cerrar Sesión
                 </span>
 
-              </Link>
+              </button>
 
             </div>
 
@@ -891,15 +1027,33 @@ export default function InicioPage() {
 
       )}
 
-      {/* =====================================================
-          MODAL SUBIR BEAT
-      ====================================================== */}
+      {/* MODAL SUBIR BEAT */}
       <UploadBeatModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onSuccess={(newTrack) => {
           loadTracks(selectedGenre);
         }}
+      />
+
+      {/* MODAL EDITAR PERFIL DE USUARIO */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
+
+      {/* DRAWER MIS BEATS FAVORITOS */}
+      <FavoritesDrawer
+        isOpen={isFavoritesOpen}
+        onClose={() => setIsFavoritesOpen(false)}
+        favorites={favorites}
+        onRemoveFavorite={(trackId) => {
+          const targetTrack = tracks.find((t) => t.id === trackId);
+          if (targetTrack) handleToggleFavorite(targetTrack);
+        }}
+        onPlayTrack={handlePlayTrack}
+        currentlyPlayingId={currentlyPlayingId}
+        isPlaying={isPlaying}
       />
 
     </div>

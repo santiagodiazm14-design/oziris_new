@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, UploadCloud, Music, Image as ImageIcon, CheckCircle, AlertCircle, Play, Pause, Loader2 } from 'lucide-react';
 import { uploadBeat, Track } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 
 interface UploadBeatModalProps {
   isOpen: boolean;
@@ -10,7 +11,10 @@ interface UploadBeatModalProps {
   onSuccess: (newTrack: Track) => void;
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
 export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBeatModalProps) {
+  const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [genre, setGenre] = useState('Trap');
@@ -164,6 +168,8 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
 
       if (coverFile) {
         formData.append('cover', coverFile);
+      } else if (user?.avatarUrl) {
+        formData.append('coverUrl', user.avatarUrl);
       }
 
       const newTrack = await uploadBeat(formData, (progress) => {
@@ -319,11 +325,27 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
               {!coverFile ? (
                 <div
                   onClick={() => coverInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/15 rounded-xl bg-white/[0.02] hover:bg-purple-500/5 hover:border-purple-500/40 transition cursor-pointer group text-center"
+                  className="flex flex-col items-center justify-center p-5 border-2 border-dashed border-white/15 rounded-xl bg-white/[0.02] hover:bg-purple-500/5 hover:border-purple-500/40 transition cursor-pointer group text-center"
                 >
-                  <ImageIcon className="w-8 h-8 text-zinc-400 group-hover:text-purple-400 transition mb-2" />
-                  <span className="font-medium text-white group-hover:text-purple-300">Seleccionar Portada</span>
-                  <span className="text-xs text-zinc-500 mt-1">JPG, PNG o WEBP (máx 10MB)</span>
+                  {user?.avatarUrl ? (
+                    <div className="flex items-center gap-3 mb-2 bg-purple-500/10 p-2 rounded-xl border border-purple-500/20">
+                      <img
+                        src={user.avatarUrl.startsWith('http') ? user.avatarUrl : `${API_BASE_URL}${user.avatarUrl}`}
+                        alt="Avatar"
+                        className="w-10 h-10 object-cover rounded-lg border border-purple-500/30 shrink-0"
+                      />
+                      <div className="text-left">
+                        <p className="text-xs font-semibold text-purple-300">Foto de Perfil asignada por defecto</p>
+                        <p className="text-[11px] text-zinc-400">Haz clic para elegir una portada diferente</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-8 h-8 text-zinc-400 group-hover:text-purple-400 transition mb-2" />
+                      <span className="font-medium text-white group-hover:text-purple-300">Seleccionar Portada</span>
+                      <span className="text-xs text-zinc-500 mt-1">JPG, PNG o WEBP (máx 10MB)</span>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="p-3 border border-white/15 rounded-xl bg-white/[0.04] flex items-center gap-4">

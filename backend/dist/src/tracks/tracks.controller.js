@@ -29,7 +29,7 @@ let TracksController = class TracksController {
     async findOne(id) {
         return this.tracksService.findOne(id);
     }
-    async create(body, files) {
+    async create(req, body, files) {
         const uploadedAudio = files?.audioFile?.[0] || files?.audio?.[0];
         const uploadedCover = files?.coverImage?.[0] || files?.cover?.[0];
         const audioUrl = uploadedAudio
@@ -41,6 +41,7 @@ let TracksController = class TracksController {
         const tagsArray = typeof body?.tags === 'string'
             ? body.tags.split(',').map((t) => t.trim()).filter(Boolean)
             : body?.tags || [];
+        const producerId = req?.user?.id || body?.producerId || 'user-admin-1';
         return this.tracksService.create({
             title: body?.title,
             description: body?.description,
@@ -52,6 +53,7 @@ let TracksController = class TracksController {
             audioUrl,
             fullAudioUrl: audioUrl,
             coverUrl,
+            producerId,
         });
     }
     async remove(id) {
@@ -92,10 +94,11 @@ __decorate([
             },
         }),
     })),
-    __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.UploadedFiles)()),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.UploadedFiles)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, Object, Object]),
     __metadata("design:returntype", Promise)
 ], TracksController.prototype, "create", null);
 __decorate([

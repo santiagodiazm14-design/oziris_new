@@ -8,6 +8,7 @@ import {
   Body,
   UseInterceptors,
   UploadedFiles,
+  Request,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -52,6 +53,7 @@ export class TracksController {
     ),
   )
   async create(
+    @Request() req: any,
     @Body() body: any,
     @UploadedFiles()
     files: {
@@ -76,6 +78,9 @@ export class TracksController {
         ? body.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
         : body?.tags || [];
 
+    // Use authenticated user ID as producerId if JWT is present, otherwise fallback
+    const producerId = req?.user?.id || body?.producerId || 'user-admin-1';
+
     return this.tracksService.create({
       title: body?.title,
       description: body?.description,
@@ -87,6 +92,7 @@ export class TracksController {
       audioUrl,
       fullAudioUrl: audioUrl,
       coverUrl,
+      producerId,
     });
   }
 

@@ -18,6 +18,8 @@ export interface Track {
     id: string;
     name: string;
     email: string;
+    avatarUrl?: string | null;
+    artistName?: string | null;
   };
   createdAt: string;
   updatedAt: string;
@@ -41,6 +43,8 @@ const INITIAL_TRACKS: Track[] = [
       id: 'prod-1',
       name: 'Oziris Producer',
       email: 'producer@oziris.com',
+      avatarUrl: null,
+      artistName: 'Oziris Producer',
     },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -62,6 +66,8 @@ const INITIAL_TRACKS: Track[] = [
       id: 'prod-1',
       name: 'Oziris Producer',
       email: 'producer@oziris.com',
+      avatarUrl: null,
+      artistName: 'Oziris Producer',
     },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -83,6 +89,8 @@ const INITIAL_TRACKS: Track[] = [
       id: 'prod-1',
       name: 'Oziris Producer',
       email: 'producer@oziris.com',
+      avatarUrl: null,
+      artistName: 'Oziris Producer',
     },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -104,6 +112,8 @@ const INITIAL_TRACKS: Track[] = [
       id: 'prod-1',
       name: 'Oziris Producer',
       email: 'producer@oziris.com',
+      avatarUrl: null,
+      artistName: 'Oziris Producer',
     },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -128,7 +138,7 @@ export class TracksService {
         return dbTracks.map((t) => this.formatTrack(t));
       }
     } catch (e) {
-      // Database offline or query issue: use in-memory store
+      // Fallback
     }
 
     if (genre) {
@@ -157,7 +167,16 @@ export class TracksService {
     return track;
   }
 
-  async create(data: Partial<Track>): Promise<Track> {
+  async create(data: Partial<Track> & { producerId?: string }): Promise<Track> {
+    const producerId = data.producerId || 'user-admin-1';
+    
+    // Fetch producer from DB to get avatar if cover not provided
+    let producerAvatarUrl: string | null = null;
+    try {
+      const p = await this.prisma.user.findUnique({ where: { id: producerId } });
+      if (p) producerAvatarUrl = p.avatarUrl;
+    } catch (e) {}
+
     const newTrack: Track = {
       id: `track-${Date.now()}`,
       title: data.title || 'Untitled Beat',
@@ -169,12 +188,13 @@ export class TracksService {
       tags: data.tags || [],
       audioUrl: data.audioUrl || '',
       fullAudioUrl: data.fullAudioUrl || data.audioUrl || '',
-      coverUrl: data.coverUrl || '',
-      producerId: data.producerId || 'prod-1',
+      coverUrl: data.coverUrl || producerAvatarUrl || '',
+      producerId: producerId,
       producer: {
-        id: 'prod-1',
+        id: producerId,
         name: 'Oziris Producer',
         email: 'producer@oziris.com',
+        avatarUrl: producerAvatarUrl,
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -188,16 +208,19 @@ export class TracksService {
           description: newTrack.description,
           price: newTrack.price,
           genre: newTrack.genre,
+          bpm: newTrack.bpm,
+          key: newTrack.key,
+          tags: newTrack.tags || [],
           audioUrl: newTrack.audioUrl,
           fullAudioUrl: newTrack.fullAudioUrl,
           coverUrl: newTrack.coverUrl,
-          producerId: 'prod-1',
+          producerId: producerId,
         },
         include: { producer: true },
       });
       if (created) return this.formatTrack(created);
     } catch (e) {
-      // Fallback to in-memory store
+      console.error('DB create track error (using in-memory fallback):', e?.message || e);
     }
 
     this.inMemoryTracks.unshift(newTrack);
@@ -221,13 +244,28 @@ export class TracksService {
       description: t.description,
       price: t.price,
       genre: t.genre,
+      bpm: t.bpm,
+      key: t.key,
+      tags: t.tags || [],
       audioUrl: t.audioUrl,
       fullAudioUrl: t.fullAudioUrl || t.audioUrl,
-      coverUrl: t.coverUrl,
+      coverUrl: t.coverUrl || t.producer?.avatarUrl || null,
       producerId: t.producerId,
       producer: t.producer
-        ? { id: t.producer.id, name: t.producer.name, email: t.producer.email }
-        : { id: t.producerId, name: 'Oziris Producer', email: 'producer@oziris.com' },
+        ? {
+            id: t.producer.id,
+            name: t.producer.name,
+            email: t.producer.email,
+            avatarUrl: t.producer.avatarUrl || null,
+            artistName: t.producer.artistName || null,
+          }
+        : {
+            id: t.producerId,
+            name: 'Oziris Producer',
+            email: 'producer@oziris.com',
+            avatarUrl: null,
+            artistName: null,
+          },
       createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt || new Date().toISOString(),
       updatedAt: t.updatedAt instanceof Date ? t.updatedAt.toISOString() : t.updatedAt || new Date().toISOString(),
     };

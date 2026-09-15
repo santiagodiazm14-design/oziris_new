@@ -4,7 +4,7 @@ export declare class TracksController {
     constructor(tracksService: TracksService);
     findAll(genre?: string): Promise<Track[]>;
     findOne(id: string): Promise<Track>;
-    create(body: any, files: {
+    create(req: any, body: any, files: {
         audio?: any[];
         audioFile?: any[];
         cover?: any[];
