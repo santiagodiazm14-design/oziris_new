@@ -1,5 +1,4 @@
 import React from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -14,7 +13,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <div className="relative z-10">
-          <Link href="/" className="flex items-center group">
+          <div className="flex items-center">
             <Image
               src="/logo.png"
               alt="Oziris Logo"
@@ -23,7 +22,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               className="object-contain"
               priority
             />
-          </Link>
+          </div>
         </div>
 
         <div className="relative z-10 max-w-md">
