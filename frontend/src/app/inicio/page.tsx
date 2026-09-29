@@ -32,6 +32,8 @@ import ProfileModal from "@/components/profile/ProfileModal";
 import FavoritesDrawer from "@/components/favorites/FavoritesDrawer";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { usePlayer } from "@/context/PlayerContext";
+import { useFavorites } from "@/context/FavoritesContext";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -39,70 +41,29 @@ const API_BASE_URL =
 export default function InicioPage() {
   const { cartCount, toggleCart, addToCart, isInCart } = useCart();
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { currentTrack, isPlaying: isPlayerPlaying, playTrack } = usePlayer();
+  const {
+    favorites,
+    isFavorite,
+    toggleFavorite: handleToggleFavorite,
+    isFavoritesOpen,
+    openFavorites,
+    closeFavorites,
+    toggleFavoritesDrawer,
+  } = useFavorites();
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
 
   const [tracks, setTracks] = useState<Track[]>([]);
-  const [favorites, setFavorites] = useState<Track[]>([]);
   const [isLoadingTracks, setIsLoadingTracks] = useState(true);
   const [selectedGenre, setSelectedGenre] = useState<string | undefined>(
     undefined
   );
-
-  // Audio player
-  const [currentlyPlayingId, setCurrentlyPlayingId] = useState<string | null>(
-    null
-  );
-  const [isPlaying, setIsPlaying] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("oziris_auth_token") : null;
-
-  const loadFavorites = async () => {
-    if (!token || !isAuthenticated) return;
-    try {
-      const favData = await fetchFavoritesApi(token);
-      if (Array.isArray(favData)) {
-        // If favData is array of tracks or track IDs
-        const favTracks = favData.map((f: any) => (typeof f === 'string' ? tracks.find((t) => t.id === f) : f)).filter(Boolean);
-        setFavorites(favTracks);
-      }
-    } catch (e) {
-      console.error("Error loading favorites:", e);
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadFavorites();
-    } else {
-      setFavorites([]);
-    }
-  }, [isAuthenticated, token, tracks]);
-
-  const handleToggleFavorite = async (track: Track) => {
-    if (!isAuthenticated || !token) {
-      setAudioError("Inicia sesión para guardar tus Beats favoritos.");
-      setTimeout(() => setAudioError(null), 3000);
-      return;
-    }
-
-    try {
-      const res = await toggleFavoriteApi(token, track.id);
-      if (res.isFavorite) {
-        setFavorites((prev) => [...prev.filter((f) => f.id !== track.id), track]);
-      } else {
-        setFavorites((prev) => prev.filter((f) => f.id !== track.id));
-      }
-    } catch (err: any) {
-      console.error("Error toggling favorite:", err);
-    }
-  };
-
-  const isFavorite = (trackId: string) => favorites.some((f) => f.id === trackId);
 
   const loadTracks = async (genre?: string) => {
     try {
@@ -123,47 +84,7 @@ export default function InicioPage() {
   }, [selectedGenre]);
 
   const handlePlayTrack = (track: Track) => {
-    setAudioError(null);
-    const fullAudioUrl = track.audioUrl.startsWith("http")
-      ? track.audioUrl
-      : `${API_BASE_URL}${track.audioUrl}`;
-
-    if (currentlyPlayingId === track.id) {
-      if (isPlaying) {
-        audioRef.current?.pause();
-        setIsPlaying(false);
-      } else {
-        audioRef.current?.play();
-        setIsPlaying(true);
-      }
-    } else {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-
-      const newAudio = new Audio(fullAudioUrl);
-
-      audioRef.current = newAudio;
-
-      newAudio
-        .play()
-        .then(() => {
-          setCurrentlyPlayingId(track.id);
-          setIsPlaying(true);
-        })
-        .catch((err) => {
-          console.error("Error al reproducir audio:", err);
-          setAudioError(`No se puede reproducir "${track.title}". El archivo de audio no es compatible con el navegador.`);
-          setCurrentlyPlayingId(null);
-          setIsPlaying(false);
-          setTimeout(() => setAudioError(null), 4000);
-        });
-
-      newAudio.onended = () => {
-        setIsPlaying(false);
-        setCurrentlyPlayingId(null);
-      };
-    }
+    playTrack(track, tracks);
   };
 
   const topCharts = [
@@ -242,138 +163,112 @@ export default function InicioPage() {
       )}
 
       {/* =====================================================
-          BANNER
+          BANNER ANNOUNCEMENT
       ====================================================== */}
-      <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 border-b border-white/10 px-4 py-3 flex items-center justify-between text-sm">
-        <div className="flex items-center gap-4 mx-auto max-w-7xl w-full">
+      <div className="bg-gradient-to-r from-purple-950/80 via-[#0d0d18] to-blue-950/80 border-b border-purple-500/20 px-4 py-2.5 text-xs sm:text-sm">
+        <div className="flex items-center justify-between mx-auto max-w-7xl w-full">
+          <div className="flex items-center gap-3">
+            <span className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-extrabold px-2.5 py-0.5 rounded-full text-[10px] tracking-wider shadow-[0_0_12px_rgba(147,51,234,0.5)]">
+              OZIRIS PRO
+            </span>
+            <span className="font-semibold text-zinc-200">
+              Catálogo Oficial de Beats & Instrumentales
+            </span>
+            <span className="text-zinc-400 hidden md:inline">
+              • Licencias 100% libres de regalías con entrega inmediata
+            </span>
+          </div>
 
-          <span className="bg-red-600 text-white font-bold px-2 py-0.5 rounded text-xs">
-            O Z I R I S
-          </span>
-
-          <span className="hidden md:inline font-medium">
-            Oziris: Beats para todos
-          </span>
-
-          <span className="text-zinc-400 hidden md:inline ml-2">
-            Descubre el sonido que buscas con productores reales.
-          </span>
-
-          <button className="ml-auto bg-white/10 hover:bg-white/20 transition px-4 py-1.5 rounded-full font-medium">
-            Saber Más
-          </button>
-
+          <Link
+            href="/planes"
+            className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-cyan-300 hover:text-cyan-200 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-3 py-1 rounded-full transition"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Ver Planes</span>
+          </Link>
         </div>
       </div>
 
       {/* =====================================================
-          HEADER
+          HEADER NAVBAR
       ====================================================== */}
-      <header className="border-b border-white/5 sticky top-0 bg-[#0a0a0a]/90 backdrop-blur-md z-30">
-
+      <header className="border-b border-purple-500/20 sticky top-0 bg-[#08080e]/90 backdrop-blur-2xl z-30 shadow-[0_4px_30px_rgba(0,0,0,0.6)]">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-
-          {/* IZQUIERDA */}
+          {/* LEFT: LOGO & NAV */}
           <div className="flex items-center gap-6">
-
             <button
               onClick={() => setIsMenuOpen(true)}
-              className="flex items-center gap-2 hover:text-purple-400 transition"
+              className="flex items-center gap-2 text-zinc-400 hover:text-purple-300 transition"
               type="button"
             >
               <Menu className="w-6 h-6" />
             </button>
 
             <Link href="/" className="flex items-center gap-2">
-              <Image
-                src="/logo.png"
-                alt="Oziris Logo"
-                width={110}
-                height={35}
-                className="object-contain"
-                priority
-              />
+              <span className="text-2xl font-extrabold tracking-wider bg-gradient-to-r from-white via-purple-200 to-cyan-400 bg-clip-text text-transparent">
+                OZIRIS
+              </span>
             </Link>
 
             <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-zinc-400">
-
-              <Link
-                href="#"
-                className="hover:text-white transition"
-              >
+              <Link href="#" className="hover:text-purple-300 transition">
                 Novedades
               </Link>
-
-              <Link
-                href="#"
-                className="flex items-center gap-1 hover:text-white transition"
-              >
-                Aprender
+              <Link href="/planes" className="hover:text-purple-300 transition">
+                Precios
+              </Link>
+              <Link href="#" className="flex items-center gap-1 hover:text-purple-300 transition">
+                Géneros
                 <ChevronDown className="w-4 h-4" />
               </Link>
-
             </nav>
-
           </div>
 
-          {/* BUSCADOR */}
+          {/* CENTER: SEARCH BAR */}
           <div className="flex-1 max-w-xl hidden md:flex">
-
-            <div className="w-full relative flex items-center bg-white/5 border border-white/10 rounded-full focus-within:border-purple-500/50 transition-colors">
-
-              <Search className="w-4 h-4 text-zinc-400 absolute left-4" />
-
+            <div className="w-full relative flex items-center bg-[#12121e] border border-purple-500/25 rounded-full focus-within:border-purple-400 focus-within:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all">
+              <Search className="w-4 h-4 text-purple-400 absolute left-4" />
               <input
                 type="text"
-                placeholder="Busca el beat de tu gusto..."
+                placeholder="Busca por género, BPM, artista (Drake, Trap, Drill)..."
                 className="w-full bg-transparent border-none py-2 pl-10 pr-24 text-sm text-white placeholder-zinc-500 focus:outline-none"
               />
-
-              <div className="absolute right-2 flex items-center gap-2 border-l border-white/10 pl-2">
-
-                <span className="text-sm font-medium">
-                  Pistas
-                </span>
-
-                <ChevronDown className="w-4 h-4 text-zinc-400" />
-
+              <div className="absolute right-2 flex items-center gap-1 border-l border-purple-500/20 pl-2">
+                <span className="text-xs font-semibold text-purple-300">Beats</span>
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
               </div>
-
             </div>
-
           </div>
 
-          {/* DERECHA */}
-          <div className="flex items-center gap-4 text-sm font-medium">
-
+          {/* RIGHT: BUTTONS & AUTH */}
+          <div className="flex items-center gap-3 text-sm font-medium">
             {/* SUBIR BEAT */}
             <button
               onClick={() => setIsUploadModalOpen(true)}
               type="button"
-              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold px-4 py-2 rounded-full shadow-lg shadow-purple-500/30 transition transform hover:scale-105 active:scale-95"
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold px-4 py-2 rounded-full shadow-lg shadow-purple-600/30 hover:shadow-purple-500/50 border border-purple-400/20 transition transform hover:scale-105 active:scale-95"
             >
               <UploadCloud className="w-4 h-4" />
-              <span>Subir Beat</span>
+              <span className="hidden sm:inline">Subir Beat</span>
             </button>
 
-            {/* USUARIO AUTENTICADO / REGISTRO / LOGIN */}
             {isAuthenticated ? (
-              <div className="hidden lg:flex items-center gap-3 text-zinc-300">
+              <div className="flex items-center gap-3 text-zinc-300">
                 {isAdmin && (
                   <Link
                     href="/admin"
                     className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/50 hover:to-blue-600/50 text-purple-300 border border-purple-500/40 px-3 py-1.5 rounded-full text-xs font-bold transition shadow-sm"
                   >
                     <Shield className="w-3.5 h-3.5" />
-                    <span>Panel Admin</span>
+                    <span className="hidden sm:inline">Admin</span>
                   </Link>
                 )}
 
                 {/* BOTÓN DE FAVORITOS (CORAZÓN ❤️) */}
                 <button
-                  onClick={() => setIsFavoritesOpen(true)}
+                  onClick={openFavorites}
                   type="button"
-                  className="relative flex items-center justify-center p-2.5 bg-white/5 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-white/10 hover:border-rose-500/40 rounded-full transition cursor-pointer group"
+                  className="relative flex items-center justify-center p-2.5 bg-[#12121e] hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-purple-500/20 hover:border-rose-500/40 rounded-full transition cursor-pointer group"
                   title="Mis Beats Favoritos"
                 >
                   <Heart className="w-4 h-4 fill-rose-500 group-hover:scale-110 transition-transform" />
@@ -384,283 +279,260 @@ export default function InicioPage() {
                   )}
                 </button>
 
-                {/* BOTÓN DE PERFIL DE USUARIO */}
+                {/* PERFIL */}
                 <button
                   onClick={() => setIsProfileModalOpen(true)}
                   type="button"
-                  className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/40 px-3 py-1.5 rounded-full transition cursor-pointer group"
-                  title="Editar Perfil de Usuario"
+                  className="flex items-center gap-2 bg-[#12121e] hover:bg-purple-500/20 border border-purple-500/20 hover:border-purple-500/40 px-3 py-1.5 rounded-full transition cursor-pointer group"
                 >
                   <div className="w-6 h-6 rounded-full bg-purple-500/30 text-purple-200 text-xs font-bold flex items-center justify-center overflow-hidden border border-purple-500/40">
                     {user?.avatarUrl ? (
                       <img
-                        src={user.avatarUrl.startsWith('http') ? user.avatarUrl : `${API_BASE_URL}${user.avatarUrl}`}
+                        src={user.avatarUrl.startsWith("http") ? user.avatarUrl : `${API_BASE_URL}${user.avatarUrl}`}
                         alt={user.name}
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      user?.name?.charAt(0).toUpperCase() || "U"
+                      user?.name?.charAt(0).toUpperCase() || <UserIcon className="w-3.5 h-3.5" />
                     )}
                   </div>
-                  <div className="flex flex-col text-left">
-                    <span className="text-xs font-semibold text-white max-w-[100px] truncate group-hover:text-purple-300 transition">
-                      {user?.artistName || user?.name}
-                    </span>
-                  </div>
-                  <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded font-mono">
-                    {user?.role}
+                  <span className="hidden sm:inline text-xs font-semibold text-zinc-200 group-hover:text-purple-300">
+                    {user?.name?.split(" ")[0]}
                   </span>
-                </button>
-
-                {/* BOTÓN CERRAR SESIÓN */}
-                <button
-                  onClick={logout}
-                  className="p-2 text-zinc-400 hover:text-red-400 hover:bg-white/10 rounded-xl transition"
-                  title="Cerrar Sesión"
-                >
-                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
             ) : (
-              <div className="hidden lg:flex items-center gap-4 text-zinc-400">
+              <div className="flex items-center gap-3">
                 <Link
                   href="/register"
-                  className="hover:text-white transition"
+                  className="text-xs font-semibold text-zinc-300 hover:text-white transition"
                 >
                   Registro
                 </Link>
-
-                <div className="w-[1px] h-4 bg-white/10"></div>
-
                 <Link
                   href="/login"
-                  className="hover:text-white transition"
+                  className="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition"
                 >
                   Iniciar Sesión
                 </Link>
               </div>
             )}
 
-            {/* =================================================
-                CARRITO DE COMPRAS EN EL HEADER
-            ================================================== */}
+            {/* CARRITO */}
             <button
               onClick={toggleCart}
               type="button"
-              className="relative flex items-center justify-center p-2.5 text-zinc-300 hover:text-white hover:bg-white/10 rounded-xl transition ml-2 cursor-pointer group"
+              className="relative flex items-center justify-center p-2.5 bg-[#12121e] hover:bg-purple-500/20 text-zinc-300 hover:text-white border border-purple-500/20 rounded-full transition cursor-pointer group"
               title="Carrito de compras"
-              aria-label="Carrito de compras"
             >
-              <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <ShoppingBag className="w-4 h-4 text-purple-300 group-hover:scale-110 transition-transform" />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/50 animate-in zoom-in duration-200">
                   {cartCount}
                 </span>
               )}
             </button>
-
           </div>
-
         </div>
 
-        {/* =================================================
-            SECONDARY NAV
-        ================================================== */}
-        <div className="border-t border-white/5 bg-[#0a0a0a] hidden md:block">
-
-          <div className="max-w-7xl mx-auto px-4 h-12 flex items-center justify-center gap-8 text-sm font-medium text-zinc-400">
-
-            <Link
-              href="#"
-              className="flex items-center gap-2 text-white"
+        {/* SECONDARY NAVIGATION BAR */}
+        <div className="border-t border-purple-500/10 bg-[#0c0c16]/95 hidden md:block">
+          <div className="max-w-7xl mx-auto px-4 h-11 flex items-center justify-center gap-8 text-xs font-semibold text-zinc-400">
+            <button
+              onClick={() => setSelectedGenre(undefined)}
+              className={`flex items-center gap-1.5 transition ${
+                !selectedGenre ? "text-purple-400 font-bold border-b-2 border-purple-500 pb-0.5" : "hover:text-white"
+              }`}
             >
-              <Activity className="w-4 h-4" />
-              Pistas
-            </Link>
-
-            <Link
-              href="#"
-              className="flex items-center gap-2 hover:text-white transition"
+              <Activity className="w-3.5 h-3.5" />
+              Todos los Beats
+            </button>
+            <button
+              onClick={() => setSelectedGenre("Trap")}
+              className={`flex items-center gap-1.5 transition ${
+                selectedGenre === "Trap" ? "text-purple-400 font-bold border-b-2 border-purple-500 pb-0.5" : "hover:text-white"
+              }`}
             >
-              <Grid className="w-4 h-4" />
-              Colecciones
-            </Link>
-
-            <Link
-              href="#"
-              className="flex items-center gap-2 hover:text-white transition"
+              <Zap className="w-3.5 h-3.5 text-purple-400" />
+              Trap
+            </button>
+            <button
+              onClick={() => setSelectedGenre("Drill")}
+              className={`flex items-center gap-1.5 transition ${
+                selectedGenre === "Drill" ? "text-cyan-400 font-bold border-b-2 border-cyan-500 pb-0.5" : "hover:text-white"
+              }`}
             >
-              <Headphones className="w-4 h-4" />
-              Kits de Sonido
-            </Link>
-
-            <Link
-              href="#"
-              className="flex items-center gap-2 hover:text-white transition"
+              <Grid className="w-3.5 h-3.5 text-cyan-400" />
+              Drill
+            </button>
+            <button
+              onClick={() => setSelectedGenre("Reggaeton")}
+              className={`flex items-center gap-1.5 transition ${
+                selectedGenre === "Reggaeton" ? "text-pink-400 font-bold border-b-2 border-pink-500 pb-0.5" : "hover:text-white"
+              }`}
             >
-              <Menu className="w-4 h-4" />
-              Músicos
-            </Link>
-
-            <Link
-              href="#"
-              className="flex items-center gap-2 hover:text-white transition"
+              <Mic className="w-3.5 h-3.5 text-pink-400" />
+              Reggaeton & Urbano
+            </button>
+            <button
+              onClick={() => setSelectedGenre("R&B")}
+              className={`flex items-center gap-1.5 transition ${
+                selectedGenre === "R&B" ? "text-blue-400 font-bold border-b-2 border-blue-500 pb-0.5" : "hover:text-white"
+              }`}
             >
-              <Star className="w-4 h-4" />
-              Modelos de IA
-            </Link>
-
+              <Headphones className="w-3.5 h-3.5 text-blue-400" />
+              R&B Soul
+            </button>
+            <button
+              onClick={() => setSelectedGenre("Hip Hop")}
+              className={`flex items-center gap-1.5 transition ${
+                selectedGenre === "Hip Hop" ? "text-emerald-400 font-bold border-b-2 border-emerald-500 pb-0.5" : "hover:text-white"
+              }`}
+            >
+              <Star className="w-3.5 h-3.5 text-emerald-400" />
+              Hip Hop Clásico
+            </button>
           </div>
-
         </div>
-
       </header>
 
       {/* =====================================================
-          MAIN
+          HERO SHOWCASE SECTION (CYBERPUNK NEON GLOW)
       ====================================================== */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 flex flex-col gap-8">
+      <section className="relative overflow-hidden border-b border-purple-500/15 py-12 md:py-16 bg-gradient-to-b from-[#0e0e1a]/80 via-[#08080c] to-[#08080c]">
+        {/* Ambient Neon Glow Balls */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl pointer-events-none -translate-y-1/2"></div>
+        <div className="absolute top-1/2 right-1/4 w-80 h-80 bg-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
-        {/* SECTION HEADER */}
-        <div className="flex items-center justify-between flex-wrap gap-4 border-b border-white/10 pb-4">
+        <div className="relative max-w-7xl mx-auto px-4 text-center flex flex-col items-center gap-6">
+          <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-semibold px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(147,51,234,0.25)] backdrop-blur-md">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Tu mercado de beats</span>
+          </div>
 
-          <div className="flex items-center gap-3">
-
-            <h2 className="text-2xl font-bold tracking-tight">
-              Catálogo de Beats
-            </h2>
-
-            <span className="text-xs bg-purple-500/20 text-purple-400 border border-purple-500/30 px-2.5 py-1 rounded-full font-normal">
-              {tracks.length}{" "}
-              {tracks.length === 1 ? "Beat" : "Beats"}
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight max-w-4xl leading-tight">
+            Descubre y Adquiere los{" "}
+            <span className="bg-gradient-to-r from-purple-400 via-violet-300 to-cyan-400 bg-clip-text text-transparent">
+              Mejores Beats Urbanos
             </span>
+          </h1>
 
+          <p className="text-sm sm:text-base text-zinc-300 max-w-2xl">
+            Producciones exclusivas y de alta calidad para artistas de Trap, Drill, Reggaeton y R&B. Escucha, compra y descarga tus pistas al instante.
+          </p>
+
+          {/* Quick Search Tag Pills */}
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+            <span className="text-xs text-zinc-400 font-mono">Tendencias:</span>
+            {["Drake Type Beat", "Travis Scott", "Bad Bunny", "Feid", "Drill 140 BPM", "Guitar R&B"].map((item, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className="text-xs text-purple-200 bg-[#12121f] hover:bg-purple-500/20 border border-purple-500/20 hover:border-purple-500/40 px-3 py-1 rounded-full transition cursor-pointer"
+              >
+                #{item}
+              </button>
+            ))}
+          </div>
+
+          {/* Stats Bar */}
+          <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-4 border-t border-purple-500/15 w-full max-w-xl">
+            <div>
+              <p className="text-xl sm:text-2xl font-extrabold text-white">100%</p>
+              <p className="text-[11px] text-purple-300 font-medium">Exclusivos</p>
+            </div>
+            <div>
+              <p className="text-xl sm:text-2xl font-extrabold text-cyan-400">Audio</p>
+              <p className="text-[11px] text-zinc-400 font-medium">WAV + MP3</p>
+            </div>
+            <div>
+              <p className="text-xl sm:text-2xl font-extrabold text-emerald-400">Instant</p>
+              <p className="text-[11px] text-zinc-400 font-medium">Descarga Inmediata</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          MAIN CATALOG CONTAINER
+      ====================================================== */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 pb-32 flex flex-col gap-8">
+        {/* SECTION HEADER */}
+        <div className="flex items-center justify-between flex-wrap gap-4 border-b border-purple-500/15 pb-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+              <span>Catálogo de Beats</span>
+              <span className="text-xs bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold px-2.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(147,51,234,0.4)]">
+                {tracks.length} {tracks.length === 1 ? "Beat" : "Beats"}
+              </span>
+            </h2>
           </div>
 
           <div className="flex items-center gap-3">
-
             <button
               onClick={() => setIsUploadModalOpen(true)}
               type="button"
-              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-purple-500/30 transition transform hover:scale-105 active:scale-95"
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-purple-600/30 hover:shadow-purple-500/50 border border-purple-400/20 transition transform hover:scale-105 active:scale-95"
             >
               <UploadCloud className="w-5 h-5" />
               <span>+ Subir Nuevo Beat</span>
             </button>
-
-            <button
-              type="button"
-              className="flex items-center gap-2 bg-white/5 hover:bg-white/10 transition px-3 py-2 rounded-xl text-sm font-medium border border-white/10"
-            >
-              Filtros
-              <ChevronDown className="w-4 h-4" />
-            </button>
-
           </div>
-
         </div>
 
         {/* =====================================================
-            CATEGORIES
+            CATEGORIES (CYBERPUNK CAROUSEL)
         ====================================================== */}
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-
           {topCharts.map((item) => (
-
             <button
               key={item.id}
               type="button"
-              className="flex flex-col items-center gap-3 snap-start min-w-[100px] group"
+              className="flex flex-col items-center gap-3 snap-start min-w-[105px] group"
             >
-
               <div
-                className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
+                className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300 ${
                   item.active
-                    ? "border-2 border-blue-500 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                    : "bg-white/5 border border-white/5 group-hover:bg-white/10 group-hover:border-white/20"
+                    ? "border-2 border-purple-500 bg-purple-500/20 shadow-[0_0_20px_rgba(147,51,234,0.4)] scale-105"
+                    : "bg-[#11111d] border border-purple-500/15 group-hover:bg-[#161626] group-hover:border-purple-500/40 group-hover:shadow-[0_0_15px_rgba(147,51,234,0.2)]"
                 }`}
               >
                 {item.icon}
               </div>
 
               <span
-                className={`text-sm font-medium ${
-                  item.active
-                    ? "text-white"
-                    : "text-zinc-400 group-hover:text-zinc-200"
+                className={`text-xs font-semibold ${
+                  item.active ? "text-purple-300" : "text-zinc-400 group-hover:text-zinc-200"
                 }`}
               >
                 {item.title}
               </span>
-
             </button>
-
           ))}
-
         </div>
 
         {/* =====================================================
-            TAGS
+            GENRE FILTER PILLS
         ====================================================== */}
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide mt-2">
-
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 shrink-0">
-
-            <Search className="w-4 h-4 text-zinc-500" />
-
-            <span className="text-sm text-zinc-500">
-              Buscar etiquetas
-            </span>
-
-          </div>
-
-          {tags.map((tag, i) => (
-
-            <button
-              key={i}
-              type="button"
-              className="bg-white/5 hover:bg-white/10 border border-white/10 transition rounded-full px-4 py-2 text-sm text-zinc-300 shrink-0 capitalize"
-            >
-              #{tag}
-            </button>
-
-          ))}
-
-        </div>
-
-        {/* =====================================================
-            FILTERS
-        ====================================================== */}
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {filters.map((filter, i) => {
-
-            const isSelected =
-              (i === 0 && !selectedGenre) ||
-              selectedGenre === filter;
+            const isSelected = (i === 0 && !selectedGenre) || selectedGenre === filter;
 
             return (
-
               <button
                 key={i}
                 type="button"
-                onClick={() =>
-                  setSelectedGenre(
-                    i === 0 ? undefined : filter
-                  )
-                }
-                className={`flex items-center gap-2 transition rounded-full px-4 py-1.5 text-sm font-medium shrink-0 ${
+                onClick={() => setSelectedGenre(i === 0 ? undefined : filter)}
+                className={`flex items-center gap-2 transition rounded-full px-4 py-1.5 text-xs font-bold shrink-0 ${
                   isSelected
-                    ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
-                    : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 border border-white/10"
+                    ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-600/30 border border-purple-400/30"
+                    : "bg-[#11111d] text-zinc-400 hover:text-white hover:bg-[#161626] border border-purple-500/15 hover:border-purple-500/30"
                 }`}
               >
                 {filter}
               </button>
-
             );
           })}
-
         </div>
 
         {/* =====================================================
@@ -715,7 +587,7 @@ export default function InicioPage() {
             {tracks.map((track) => {
 
               const isPlayingThis =
-                currentlyPlayingId === track.id && isPlaying;
+                currentTrack?.id === track.id && isPlayerPlaying;
 
               const coverPath = track.coverUrl
                 ? track.coverUrl.startsWith("http")
@@ -727,28 +599,28 @@ export default function InicioPage() {
 
                 <div
                   key={track.id}
-                  className="group relative bg-[#121216] border border-white/10 hover:border-purple-500/40 rounded-2xl p-4 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/5 flex flex-col justify-between"
+                  className="group relative bg-[#0d0d14]/90 border border-purple-500/15 hover:border-purple-500/50 rounded-2xl p-4 transition-all duration-300 hover:shadow-[0_12px_35px_rgba(147,51,234,0.18)] hover:-translate-y-1 flex flex-col justify-between backdrop-blur-sm"
                 >
 
                   {/* INFORMACIÓN PRINCIPAL */}
                   <div className="flex gap-4 items-start">
 
                     {/* COVER */}
-                    <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-zinc-800 shrink-0 border border-white/10 group-hover:border-purple-500/30 transition">
+                    <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-zinc-900 shrink-0 border border-purple-500/20 group-hover:border-purple-500/50 transition duration-300 shadow-md">
 
                       {coverPath ? (
 
                         <img
                           src={coverPath}
                           alt={track.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                         />
 
                       ) : (
 
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/40 to-blue-900/40 text-zinc-500">
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/60 to-blue-900/60 text-purple-300">
 
-                          <Music className="w-8 h-8 text-purple-400/60" />
+                          <Music className="w-8 h-8 text-purple-400" />
 
                         </div>
 
@@ -758,17 +630,17 @@ export default function InicioPage() {
                       <button
                         onClick={() => handlePlayTrack(track)}
                         type="button"
-                        className={`absolute inset-0 m-auto w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${
+                        className={`absolute inset-0 m-auto w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 shadow-xl ${
                           isPlayingThis
-                            ? "bg-purple-600 text-white scale-100"
-                            : "bg-black/60 text-white opacity-90 group-hover:opacity-100 hover:scale-110 hover:bg-purple-600"
+                            ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white scale-100 shadow-[0_0_20px_rgba(147,51,234,0.6)]"
+                            : "bg-black/70 text-white opacity-90 group-hover:opacity-100 hover:scale-110 hover:bg-gradient-to-r hover:from-purple-600 hover:to-blue-600 hover:shadow-[0_0_20px_rgba(147,51,234,0.5)]"
                         }`}
                       >
 
                         {isPlayingThis ? (
-                          <Pause className="w-5 h-5" />
+                          <Pause className="w-5 h-5 fill-white text-white" />
                         ) : (
-                          <Play className="w-5 h-5 ml-0.5" />
+                          <Play className="w-5 h-5 fill-white text-white ml-0.5" />
                         )}
 
                       </button>
@@ -780,17 +652,17 @@ export default function InicioPage() {
 
                       <div className="flex items-center justify-between gap-2">
 
-                        <span className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                        <span className="text-[11px] font-semibold text-purple-300 uppercase tracking-wider bg-purple-500/15 px-2.5 py-0.5 rounded-full border border-purple-500/30">
                           {track.genre || "Beat"}
                         </span>
 
-                        <span className="text-sm font-bold text-emerald-400">
+                        <span className="text-sm font-extrabold text-emerald-400">
                           ${Number(track.price).toFixed(2)}
                         </span>
 
                       </div>
 
-                      <h4 className="font-bold text-white text-base truncate mt-1 group-hover:text-purple-300 transition">
+                      <h4 className="font-bold text-white text-base truncate mt-1.5 group-hover:text-purple-300 transition">
                         {track.title}
                       </h4>
 
@@ -801,20 +673,16 @@ export default function InicioPage() {
                         </span>
                       </p>
 
-                      <div className="flex items-center gap-3 text-xs text-zinc-400 mt-2">
+                      <div className="flex items-center gap-2 text-xs text-zinc-400 mt-2">
 
                         {track.bpm && (
-                          <span>
+                          <span className="font-mono text-[11px] text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
                             {track.bpm} BPM
                           </span>
                         )}
 
-                        {track.bpm && track.key && (
-                          <span>•</span>
-                        )}
-
                         {track.key && (
-                          <span>
+                          <span className="font-mono text-[11px] text-purple-300/80 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full">
                             {track.key}
                           </span>
                         )}
@@ -831,7 +699,7 @@ export default function InicioPage() {
                   <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
 
                     {/* TAGS */}
-                    <div className="flex gap-1.5 overflow-hidden max-w-[60%]">
+                    <div className="flex gap-1.5 overflow-hidden max-w-[55%]">
 
                       {track.tags && track.tags.length > 0 ? (
 
@@ -841,7 +709,7 @@ export default function InicioPage() {
 
                             <span
                               key={idx}
-                              className="text-[11px] text-zinc-400 bg-white/5 px-2 py-0.5 rounded-full truncate"
+                              className="text-[11px] text-purple-300/70 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full truncate"
                             >
                               #{t}
                             </span>
@@ -865,39 +733,28 @@ export default function InicioPage() {
                       <button
                         onClick={() => handleToggleFavorite(track)}
                         type="button"
-                        className={`p-2 rounded-lg transition transform active:scale-90 ${
+                        className={`p-2 rounded-xl transition transform active:scale-90 ${
                           isFavorite(track.id)
-                            ? "bg-rose-500/20 text-rose-400 border border-rose-500/40"
+                            ? "bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.3)]"
                             : "bg-white/5 hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 border border-white/10"
                         }`}
                         title={isFavorite(track.id) ? "Quitar de favoritos" : "Guardar en favoritos"}
                       >
-                        <Heart className={`w-3.5 h-3.5 ${isFavorite(track.id) ? "fill-rose-500" : ""}`} />
+                        <Heart className={`w-4 h-4 ${isFavorite(track.id) ? "fill-rose-500" : ""}`} />
                       </button>
 
-                      {/* ESCUCHAR */}
-                      <button
-                        onClick={() => handlePlayTrack(track)}
-                        type="button"
-                        className="text-xs font-semibold text-purple-400 hover:text-purple-300 transition flex items-center gap-1"
-                      >
-                        {isPlayingThis
-                          ? "Pausar"
-                          : "Escuchar"}
-                      </button>
-
-                      {/* AGREGAR AL CARRITO */}
+                      {/* BOTÓN AGREGAR AL CARRITO / COMPRAR */}
                       <button
                         onClick={() => addToCart(track)}
                         type="button"
-                        className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition transform hover:scale-105 ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs shadow-md transition transform hover:scale-105 active:scale-95 ${
                           isInCart(track.id)
-                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
-                            : "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg shadow-purple-500/20"
+                            ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30"
+                            : "bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-purple-600/30 border border-purple-400/20"
                         }`}
                       >
                         <ShoppingBag className="w-3.5 h-3.5" />
-                        {isInCart(track.id) ? "En el carrito" : "Agregar"}
+                        <span>${Number(track.price).toFixed(2)}</span>
                       </button>
 
                     </div>
@@ -1045,15 +902,15 @@ export default function InicioPage() {
       {/* DRAWER MIS BEATS FAVORITOS */}
       <FavoritesDrawer
         isOpen={isFavoritesOpen}
-        onClose={() => setIsFavoritesOpen(false)}
+        onClose={closeFavorites}
         favorites={favorites}
         onRemoveFavorite={(trackId) => {
-          const targetTrack = tracks.find((t) => t.id === trackId);
+          const targetTrack = tracks.find((t) => t.id === trackId) || favorites.find((f) => f.id === trackId);
           if (targetTrack) handleToggleFavorite(targetTrack);
         }}
         onPlayTrack={handlePlayTrack}
-        currentlyPlayingId={currentlyPlayingId}
-        isPlaying={isPlaying}
+        currentlyPlayingId={currentTrack?.id || null}
+        isPlaying={isPlayerPlaying}
       />
 
     </div>

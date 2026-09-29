@@ -36,16 +36,16 @@ export default function FavoritesDrawer({
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
 
       {/* Drawer */}
-      <div className="relative w-full max-w-md bg-[#121216] border-l border-white/10 h-full flex flex-col p-6 shadow-2xl animate-in slide-in-from-right duration-300 z-10">
+      <div className="relative w-full max-w-md bg-[#0c0c14]/98 border-l border-purple-500/25 h-full flex flex-col p-6 shadow-2xl backdrop-blur-2xl animate-in slide-in-from-right duration-300 z-10">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
+        <div className="flex items-center justify-between border-b border-purple-500/20 pb-4 mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+            <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
               <Heart className="w-5 h-5 fill-rose-500" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-white">Mis Favoritos</h3>
-              <p className="text-xs text-zinc-400 font-mono">
+              <p className="text-xs text-purple-300/80 font-mono">
                 {favorites.length} {favorites.length === 1 ? 'Beat guardado' : 'Beats guardados'}
               </p>
             </div>
@@ -82,10 +82,10 @@ export default function FavoritesDrawer({
               return (
                 <div
                   key={track.id}
-                  className="bg-white/5 border border-white/10 hover:border-rose-500/30 rounded-2xl p-3 flex items-center justify-between gap-3 transition group"
+                  className="bg-[#12121c]/90 border border-purple-500/15 hover:border-purple-500/40 rounded-2xl p-3 flex items-center justify-between gap-3 transition group shadow-sm hover:shadow-[0_4px_20px_rgba(147,51,234,0.1)]"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative w-12 h-12 rounded-xl bg-zinc-800 overflow-hidden shrink-0 border border-white/10">
+                    <div className="relative w-12 h-12 rounded-xl bg-zinc-900 overflow-hidden shrink-0 border border-purple-500/20">
                       {coverPath ? (
                         <img src={coverPath} alt={track.title} className="w-full h-full object-cover" />
                       ) : (
@@ -100,11 +100,11 @@ export default function FavoritesDrawer({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-bold text-sm text-white truncate group-hover:text-rose-300 transition">
+                      <h4 className="font-bold text-sm text-white truncate group-hover:text-purple-300 transition">
                         {track.title}
                       </h4>
-                      <p className="text-xs text-zinc-400 truncate">
-                        {track.genre || 'Beat'} • <span className="text-emerald-400 font-bold">${Number(track.price).toFixed(2)}</span>
+                      <p className="text-xs text-zinc-400 truncate mt-0.5">
+                        <span className="text-purple-300">{track.genre || 'Beat'}</span> • <span className="text-emerald-400 font-bold">${Number(track.price).toFixed(2)}</span>
                       </p>
                     </div>
                   </div>
@@ -114,8 +114,8 @@ export default function FavoritesDrawer({
                       onClick={() => addToCart(track)}
                       className={`p-2 rounded-xl transition ${
                         isInCart(track.id)
-                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                          : 'bg-white/10 hover:bg-purple-600 text-white'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-md shadow-purple-500/20'
                       }`}
                       title="Agregar al Carrito"
                     >

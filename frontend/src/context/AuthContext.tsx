@@ -2,19 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { User } from '@/types';
 
-export interface User {
-  id: string;
-  name: string;
-  lastName?: string | null;
-  artistName?: string | null;
-  location?: string | null;
-  avatarUrl?: string | null;
-  email: string;
-  role: 'ADMIN' | 'USER' | 'PRODUCER' | 'BUYER' | string;
-  bio?: string | null;
-  isActive?: boolean;
-}
+export type { User };
 
 interface AuthContextType {
   user: User | null;

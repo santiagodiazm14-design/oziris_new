@@ -3,7 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { PlayerProvider } from "@/context/PlayerContext";
+import { FavoritesProvider } from "@/context/FavoritesContext";
 import CartDrawer from "@/components/cart/CartDrawer";
+import { GlobalAudioPlayer } from "@/components/player";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,8 +36,13 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <AuthProvider>
           <CartProvider>
-            {children}
-            <CartDrawer />
+            <FavoritesProvider>
+              <PlayerProvider>
+                {children}
+                <CartDrawer />
+                <GlobalAudioPlayer />
+              </PlayerProvider>
+            </FavoritesProvider>
           </CartProvider>
         </AuthProvider>
       </body>

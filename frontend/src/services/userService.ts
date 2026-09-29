@@ -1,0 +1,75 @@
+import { API_URL } from './config';
+import { User, Track } from '@/types';
+
+export async function updateProfileApi(
+  token: string,
+  payload: Partial<{
+    name: string;
+    lastName: string;
+    artistName: string;
+    location: string;
+    bio: string;
+    avatarUrl: string;
+  }>,
+): Promise<User> {
+  const res = await fetch(`${API_URL}/users/profile`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error al actualizar el perfil.');
+  }
+  return data;
+}
+
+export async function uploadAvatarApi(token: string, file: File): Promise<User> {
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  const res = await fetch(`${API_URL}/users/profile/avatar`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error al subir la imagen de avatar.');
+  }
+  return data;
+}
+
+export async function fetchFavoritesApi(token: string): Promise<Track[]> {
+  const res = await fetch(`${API_URL}/users/favorites`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error al obtener favoritos.');
+  }
+  return data;
+}
+
+export async function toggleFavoriteApi(
+  token: string,
+  trackId: string,
+): Promise<{ isFavorite: boolean; message: string }> {
+  const res = await fetch(`${API_URL}/users/favorites/${trackId}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error al cambiar estado de favorito.');
+  }
+  return data;
+}
