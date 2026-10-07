@@ -26,7 +26,14 @@ export declare class TracksService {
     private readonly prisma;
     private inMemoryTracks;
     constructor(prisma: PrismaService);
-    findAll(genre?: string): Promise<Track[]>;
+    findAll(params?: {
+        genre?: string;
+        search?: string;
+        tag?: string;
+        maxPrice?: number;
+        category?: string;
+        sort?: string;
+    }): Promise<Track[]>;
     findOne(id: string): Promise<Track>;
     create(data: Partial<Track> & {
         producerId?: string;

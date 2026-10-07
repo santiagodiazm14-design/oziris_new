@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   User,
@@ -15,29 +15,64 @@ import {
   Lock,
   ShoppingBag,
   CheckCircle2,
+  Download,
+  Loader2,
+  AlertTriangle,
+  BadgeCheck,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { simulatePaymentApi, downloadBeatFile, fetchTrackById, Track } from "@/services/api";
 
 function DatosPagoContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { user, token, isAuthenticated, isAdmin } = useAuth();
 
   const metodo = searchParams.get("metodo") || "PSE";
   const beatId = searchParams.get("beat") || "";
 
+  const [track, setTrack] = useState<Track | null>(null);
   const [formData, setFormData] = useState({
-    nombre: "",
+    nombre: user?.name || "",
     documento: "",
-    correo: "",
+    correo: user?.email || "",
     telefono: "",
-    banco: "",
+    banco: "Bancolombia",
     tipoPersona: "Persona natural",
     celularNequi: "",
-    titularTarjeta: "",
+    titularTarjeta: user?.name || "",
     numeroTarjeta: "",
     vencimiento: "",
     cvv: "",
   });
 
-  const [enviado, setEnviado] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [transactionData, setTransactionData] = useState<any>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        nombre: prev.nombre || user.name || "",
+        correo: prev.correo || user.email || "",
+        titularTarjeta: prev.titularTarjeta || user.name || "",
+      }));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    async function loadTrack() {
+      if (beatId) {
+        try {
+          const t = await fetchTrackById(beatId);
+          setTrack(t);
+        } catch {}
+      }
+    }
+    loadTrack();
+  }, [beatId]);
 
   const actualizarCampo = (
     campo: string,
@@ -49,10 +84,52 @@ function DatosPagoContent() {
     }));
   };
 
-  const enviarFormulario = (e: React.FormEvent) => {
+  const enviarFormulario = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAuthenticated || !token) {
+      setErrorMsg("Debes iniciar sesión para completar la simulación de pago.");
+      return;
+    }
 
-    setEnviado(true);
+    if (isAdmin) {
+      setErrorMsg("El rol Administrador no puede simular pagos ni comprar beats. Utiliza una cuenta de usuario normal.");
+      return;
+    }
+
+    if (!beatId) {
+      setErrorMsg("No se especificó un Beat válido.");
+      return;
+    }
+
+    try {
+      setErrorMsg(null);
+      setIsProcessing(true);
+
+      const res = await simulatePaymentApi(token, {
+        trackId: beatId,
+        paymentMethod: metodo,
+        licenseType: "ESTÁNDAR COMERCIAL (MP3 HQ)",
+        amount: track ? Number(track.price) : 29.99,
+      });
+
+      setTransactionData(res);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Error al procesar la simulación de pago.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!token || !beatId) return;
+    try {
+      setIsDownloading(true);
+      await downloadBeatFile(token, beatId, track?.title || "Beat_Oziris");
+    } catch (err: any) {
+      alert(err.message || "Error al descargar el archivo de audio.");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const getIcon = () => {
@@ -483,58 +560,106 @@ function DatosPagoContent() {
 
           </div>
 
+          {/* ERRORES */}
+          {errorMsg && (
+            <div className="mt-4 p-4 rounded-xl bg-red-950/80 border border-red-500/40 text-red-200 text-sm flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
           {/* BOTON */}
           <div className="mt-8">
-
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/20 transition transform hover:scale-[1.01]"
+              disabled={isProcessing || !!transactionData}
+              className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold shadow-lg transition transform ${
+                isProcessing || !!transactionData
+                  ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                  : "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-purple-500/20 hover:scale-[1.01]"
+              }`}
             >
-
-              <Lock className="w-5 h-5" />
-
-              Continuar con el pago
-
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Procesando pago simulado...</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-5 h-5" />
+                  <span>Confirmar y Simular Pago</span>
+                </>
+              )}
             </button>
-
           </div>
 
           {/* SEGURIDAD */}
           <div className="mt-5 flex items-center justify-center gap-2 text-xs text-zinc-500">
-
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-
-            Compra segura y protegida
-
+            <span>Simulación segura y protegida en entorno Sandbox</span>
           </div>
 
         </form>
 
-        {/* MENSAJE DE PRUEBA */}
-        {enviado && (
-          <div className="mt-6 p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-
-            <div className="flex items-center gap-3">
-
-              <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-
-              <div>
-
-                <h3 className="font-bold text-emerald-400">
-                  Información recibida
-                </h3>
-
-                <p className="text-sm text-zinc-400 mt-1">
-                  El formulario funciona correctamente.
-                  La conexión con el sistema de pagos se realizará
-                  posteriormente.
-
-                </p>
-
+        {/* TRANSACCIÓN EXITOSA Y DESCARGA DIRECTA */}
+        {transactionData && (
+          <div className="mt-8 p-6 rounded-3xl bg-[#13131c] border border-emerald-500/40 shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                  <CheckCircle2 className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-xl text-white">
+                    ¡Pago Simulado Exitoso!
+                  </h3>
+                  <p className="text-xs text-zinc-400">
+                    Transacción: <span className="font-mono text-emerald-400">{transactionData.transactionId}</span>
+                  </p>
+                </div>
               </div>
 
+              <span className="text-xs font-mono bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full">
+                LICENCIA GENERADA
+              </span>
             </div>
 
+            <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/[0.03] border border-purple-500/20 rounded-2xl p-4">
+              <div>
+                <h4 className="font-bold text-white text-sm">
+                  {track?.title || "Beat OZIRIS HQ"}
+                </h4>
+                <p className="text-xs text-zinc-400">
+                  Audio Master WAV/MP3 • Licencia Comercial Activa
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition transform hover:scale-105 active:scale-95"
+              >
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Descargando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Descargar Beat Ahora</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="mt-5 flex items-center justify-between pt-3 border-t border-white/5 text-xs text-zinc-400">
+              <Link href="/inicio" className="text-purple-400 hover:underline">
+                ← Volver al catálogo de Beats
+              </Link>
+              <span>El beat también está guardado en tu perfil.</span>
+            </div>
           </div>
         )}
 

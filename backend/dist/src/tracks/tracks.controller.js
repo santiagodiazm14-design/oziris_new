@@ -23,8 +23,15 @@ let TracksController = class TracksController {
     constructor(tracksService) {
         this.tracksService = tracksService;
     }
-    async findAll(genre) {
-        return this.tracksService.findAll(genre);
+    async findAll(genre, search, tag, maxPrice, category, sort) {
+        return this.tracksService.findAll({
+            genre,
+            search,
+            tag,
+            maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+            category,
+            sort,
+        });
     }
     async findOne(id) {
         return this.tracksService.findOne(id);
@@ -64,8 +71,13 @@ exports.TracksController = TracksController;
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('genre')),
+    __param(1, (0, common_1.Query)('search')),
+    __param(2, (0, common_1.Query)('tag')),
+    __param(3, (0, common_1.Query)('maxPrice')),
+    __param(4, (0, common_1.Query)('category')),
+    __param(5, (0, common_1.Query)('sort')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String, String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], TracksController.prototype, "findAll", null);
 __decorate([

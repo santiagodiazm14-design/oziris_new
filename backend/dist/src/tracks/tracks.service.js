@@ -112,24 +112,124 @@ let TracksService = class TracksService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async findAll(genre) {
+    async findAll(params) {
+        const genre = params?.genre;
+        const search = params?.search?.trim();
+        const tag = params?.tag?.trim();
+        const maxPrice = params?.maxPrice;
+        const category = params?.category;
+        const sort = params?.sort || 'newest';
         try {
-            const where = genre ? { genre: { equals: genre, mode: 'insensitive' } } : {};
+            const where = {};
+            const andConditions = [];
+            if (genre && genre !== 'all') {
+                andConditions.push({
+                    genre: { equals: genre, mode: 'insensitive' },
+                });
+            }
+            if (tag) {
+                andConditions.push({
+                    tags: { has: tag },
+                });
+            }
+            if (maxPrice !== undefined && !isNaN(maxPrice)) {
+                andConditions.push({
+                    price: { lte: maxPrice },
+                });
+            }
+            if (category) {
+                if (category === 'under20') {
+                    andConditions.push({ price: { lte: 20 } });
+                }
+                else if (category === 'free') {
+                    andConditions.push({ price: { lte: 15 } });
+                }
+                else if (category === 'exclusive') {
+                    andConditions.push({ price: { gte: 35 } });
+                }
+                else if (category === 'coro' || category === 'vocals') {
+                    andConditions.push({
+                        OR: [
+                            { tags: { has: 'coro' } },
+                            { tags: { has: 'vocals' } },
+                            { tags: { has: 'hook' } },
+                            { title: { contains: 'coro', mode: 'insensitive' } },
+                            { title: { contains: 'vocals', mode: 'insensitive' } },
+                        ],
+                    });
+                }
+            }
+            if (search) {
+                andConditions.push({
+                    OR: [
+                        { title: { contains: search, mode: 'insensitive' } },
+                        { description: { contains: search, mode: 'insensitive' } },
+                        { genre: { contains: search, mode: 'insensitive' } },
+                        { key: { contains: search, mode: 'insensitive' } },
+                        { producer: { name: { contains: search, mode: 'insensitive' } } },
+                        { producer: { artistName: { contains: search, mode: 'insensitive' } } },
+                        { tags: { has: search } },
+                    ],
+                });
+            }
+            if (andConditions.length > 0) {
+                where.AND = andConditions;
+            }
+            let orderBy = { createdAt: 'desc' };
+            if (sort === 'price_asc') {
+                orderBy = { price: 'asc' };
+            }
+            else if (sort === 'price_desc') {
+                orderBy = { price: 'desc' };
+            }
+            else if (sort === 'bpm_asc') {
+                orderBy = { bpm: 'asc' };
+            }
+            else if (sort === 'bpm_desc') {
+                orderBy = { bpm: 'desc' };
+            }
             const dbTracks = await this.prisma.track.findMany({
                 where,
                 include: { producer: true },
-                orderBy: { createdAt: 'desc' },
+                orderBy,
             });
             if (dbTracks && dbTracks.length > 0) {
                 return dbTracks.map((t) => this.formatTrack(t));
             }
         }
         catch (e) {
+            console.error('Error fetching tracks from DB (fallback to memory):', e?.message || e);
         }
-        if (genre) {
-            return this.inMemoryTracks.filter((t) => t.genre?.toLowerCase() === genre.toLowerCase());
+        let list = [...this.inMemoryTracks];
+        if (genre && genre !== 'all') {
+            list = list.filter((t) => t.genre?.toLowerCase() === genre.toLowerCase());
         }
-        return this.inMemoryTracks;
+        if (tag) {
+            list = list.filter((t) => t.tags?.some((tg) => tg.toLowerCase() === tag.toLowerCase()));
+        }
+        if (maxPrice !== undefined && !isNaN(maxPrice)) {
+            list = list.filter((t) => Number(t.price) <= maxPrice);
+        }
+        if (category === 'under20') {
+            list = list.filter((t) => Number(t.price) <= 20);
+        }
+        else if (category === 'free') {
+            list = list.filter((t) => Number(t.price) <= 15);
+        }
+        else if (category === 'exclusive') {
+            list = list.filter((t) => Number(t.price) >= 35);
+        }
+        if (search) {
+            const q = search.toLowerCase();
+            list = list.filter((t) => t.title.toLowerCase().includes(q) ||
+                t.genre?.toLowerCase().includes(q) ||
+                t.tags?.some((tg) => tg.toLowerCase().includes(q)) ||
+                t.producer?.name.toLowerCase().includes(q) ||
+                t.producer?.artistName?.toLowerCase().includes(q) ||
+                (t.bpm && t.bpm.toString().includes(q)) ||
+                (t.key && t.key.toLowerCase().includes(q)));
+        }
+        return list;
     }
     async findOne(id) {
         try {

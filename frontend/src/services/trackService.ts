@@ -1,8 +1,34 @@
 import { API_URL } from './config';
 import { Track } from '@/types';
 
-export async function fetchTracks(genre?: string): Promise<Track[]> {
-  const url = genre ? `${API_URL}/tracks?genre=${encodeURIComponent(genre)}` : `${API_URL}/tracks`;
+export interface FetchTracksParams {
+  genre?: string;
+  search?: string;
+  tag?: string;
+  maxPrice?: number;
+  category?: string;
+  sort?: string;
+}
+
+export async function fetchTracks(
+  params?: string | FetchTracksParams,
+): Promise<Track[]> {
+  const queryParams = new URLSearchParams();
+
+  if (typeof params === 'string') {
+    if (params) queryParams.set('genre', params);
+  } else if (params) {
+    if (params.genre) queryParams.set('genre', params.genre);
+    if (params.search) queryParams.set('search', params.search);
+    if (params.tag) queryParams.set('tag', params.tag);
+    if (params.maxPrice !== undefined) queryParams.set('maxPrice', params.maxPrice.toString());
+    if (params.category) queryParams.set('category', params.category);
+    if (params.sort) queryParams.set('sort', params.sort);
+  }
+
+  const queryString = queryParams.toString();
+  const url = queryString ? `${API_URL}/tracks?${queryString}` : `${API_URL}/tracks`;
+  
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) {
     throw new Error('Error al obtener la lista de Beats.');

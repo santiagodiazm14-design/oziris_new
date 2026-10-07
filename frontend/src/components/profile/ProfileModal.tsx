@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { updateProfileApi, uploadAvatarApi } from '@/services/api';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { updateProfileApi, uploadAvatarApi } from "@/services/api";
 import {
   X,
   User as UserIcon,
@@ -14,43 +14,54 @@ import {
   CheckCircle,
   AlertCircle,
   Sparkles,
-} from 'lucide-react';
+  Mail,
+  Shield,
+} from "lucide-react";
 
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+function getImageUrl(url?: string): string | null {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  return `${API_BASE_URL}${url}`;
+}
 
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
-  const { user, token, updateCurrentUser } = useAuth();
+  const { user, token, updateCurrentUser, isAdmin } = useAuth();
 
-  const [name, setName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [artistName, setArtistName] = useState('');
-  const [location, setLocation] = useState('');
-  const [bio, setBio] = useState('');
+  const [name, setName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [artistName, setArtistName] = useState("");
+  const [location, setLocation] = useState("");
+  const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [notification, setNotification] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     if (user) {
-      setName(user.name || '');
-      setLastName(user.lastName || '');
-      setArtistName(user.artistName || '');
-      setLocation(user.location || '');
-      setBio(user.bio || '');
+      setName(user.name || "");
+      setLastName(user.lastName || "");
+      setArtistName(user.artistName || "");
+      setLocation(user.location || "");
+      setBio(user.bio || "");
       setAvatarUrl(user.avatarUrl || null);
     }
   }, [user, isOpen]);
 
   if (!isOpen) return null;
 
-  const showNotification = (type: 'success' | 'error', message: string) => {
+  const showNotification = (type: "success" | "error", message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 4000);
   };
@@ -64,9 +75,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       const res = await uploadAvatarApi(token, file);
       setAvatarUrl(res.avatarUrl || null);
       updateCurrentUser({ avatarUrl: res.avatarUrl });
-      showNotification('success', 'Foto de perfil actualizada correctamente.');
+      showNotification("success", "Foto de perfil actualizada correctamente.");
     } catch (err: any) {
-      showNotification('error', err.message || 'Error al subir la imagen de avatar.');
+      showNotification("error", err.message || "Error al subir la imagen de avatar.");
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -94,36 +105,37 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         bio: updatedUser.bio,
       });
 
-      showNotification('success', 'Perfil guardado con éxito.');
+      showNotification("success", "¡Perfil guardado con éxito!");
       setTimeout(() => {
         onClose();
-      }, 1000);
+      }, 900);
     } catch (err: any) {
-      showNotification('error', err.message || 'Error al guardar el perfil.');
+      showNotification("error", err.message || "Error al guardar el perfil.");
     } finally {
       setIsSaving(false);
     }
   };
 
   const fullAvatarPath = avatarUrl
-    ? avatarUrl.startsWith('http')
+    ? avatarUrl.startsWith("http")
       ? avatarUrl
       : `${API_BASE_URL}${avatarUrl}`
     : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-[#121216] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6 max-h-[90vh] overflow-y-auto scrollbar-hide">
-        {/* Toast Notification */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-xl bg-[#111116] border border-purple-500/25 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(147,51,234,0.25)] flex flex-col gap-6 max-h-[90vh] overflow-y-auto scrollbar-hide text-white">
+        
+        {/* TOAST NOTIFICATION */}
         {notification && (
           <div
-            className={`flex items-center gap-3 p-4 rounded-xl border text-sm animate-in slide-in-from-top duration-300 ${
-              notification.type === 'success'
-                ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-200'
-                : 'bg-red-950/90 border-red-500/40 text-red-200'
+            className={`flex items-center gap-3 p-4 rounded-2xl border text-sm animate-in slide-in-from-top duration-300 ${
+              notification.type === "success"
+                ? "bg-emerald-950/90 border-emerald-500/40 text-emerald-200"
+                : "bg-red-950/90 border-red-500/40 text-red-200"
             }`}
           >
-            {notification.type === 'success' ? (
+            {notification.type === "success" ? (
               <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
             ) : (
               <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
@@ -132,31 +144,46 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           </div>
         )}
 
-        {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
-              <Sparkles className="w-4 h-4" />
+        {/* MODAL HEADER */}
+        <div className="flex items-center justify-between border-b border-purple-500/20 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
+              <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-white tracking-tight">Editar Perfil de Usuario</h2>
+            <div>
+              <h2 className="text-xl font-bold text-white tracking-tight">
+                Mi Perfil de Usuario
+              </h2>
+              <p className="text-xs text-zinc-400">
+                Personaliza tu información pública y datos artísticos
+              </p>
+            </div>
           </div>
+
           <button
             onClick={onClose}
             className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition"
+            aria-label="Cerrar modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {/* FORMULARIO DE PERFIL */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          {/* AVATAR UPLOAD SECTION */}
-          <div className="flex flex-col items-center justify-center gap-3">
+          
+          {/* AVATAR UPLOAD */}
+          <div className="flex flex-col items-center justify-center gap-2.5 pb-2">
             <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-purple-500/40 bg-zinc-900 shadow-xl group">
               {fullAvatarPath ? (
-                <img src={fullAvatarPath} alt={name} className="w-full h-full object-cover" />
+                <img
+                  src={fullAvatarPath}
+                  alt={name}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/50 to-blue-900/50 text-white font-extrabold text-3xl">
-                  {name ? name.charAt(0).toUpperCase() : 'U'}
+                  {name ? name.charAt(0).toUpperCase() : "U"}
                 </div>
               )}
 
@@ -183,16 +210,36 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 disabled={isUploadingAvatar}
               />
             </div>
-            <p className="text-xs text-zinc-400">Haz clic en la imagen para subir tu foto de perfil</p>
+            <p className="text-xs text-zinc-400">
+              Haz clic sobre la imagen para subir tu foto de perfil
+            </p>
           </div>
 
-          {/* FORM FIELDS */}
+          {/* EMAIL & ROLE (SOLO LECTURA) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-white/[0.02] border border-white/5 rounded-2xl text-xs">
+            <div className="flex items-center gap-2 text-zinc-400">
+              <Mail className="w-4 h-4 text-purple-400 shrink-0" />
+              <div className="truncate">
+                <span className="block text-[10px] text-zinc-500">Correo Electrónico</span>
+                <span className="text-white font-medium truncate">{user?.email}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-zinc-400">
+              <Shield className="w-4 h-4 text-cyan-400 shrink-0" />
+              <div>
+                <span className="block text-[10px] text-zinc-500">Tipo de Cuenta</span>
+                <span className="text-cyan-300 font-bold uppercase">{user?.role || "USER"}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* CAMPOS DE NOMBRE Y APELLIDO */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Nombre */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-zinc-300">Nombre</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <UserIcon className="h-4 w-4 text-zinc-500" />
                 </div>
                 <input
@@ -201,16 +248,15 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ej. Juan"
-                  className="w-full pl-9 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                 />
               </div>
             </div>
 
-            {/* Apellido */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-zinc-300">Apellido</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <UserIcon className="h-4 w-4 text-zinc-500" />
                 </div>
                 <input
@@ -218,35 +264,38 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Ej. Pérez"
-                  className="w-full pl-9 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                 />
               </div>
             </div>
           </div>
 
+          {/* CAMPOS DE ARTISTA Y UBICACIÓN */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Nombre de Artista / Productor */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-300">Nombre de Artista / Productor</label>
+              <label className="text-xs font-semibold text-zinc-300">
+                Nombre de Artista / Productor
+              </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <Mic className="h-4 w-4 text-zinc-500" />
                 </div>
                 <input
                   type="text"
                   value={artistName}
                   onChange={(e) => setArtistName(e.target.value)}
-                  placeholder="Ej. ProducerXYZ / Lil Beats"
-                  className="w-full pl-9 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="Ej. OZIRIS Lil Trap / Juan Beatmaker"
+                  className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                 />
               </div>
             </div>
 
-            {/* Ubicación (Location) */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-300">Ubicación (País / Ciudad)</label>
+              <label className="text-xs font-semibold text-zinc-300">
+                Ubicación (Ciudad / País)
+              </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <MapPin className="h-4 w-4 text-zinc-500" />
                 </div>
                 <input
@@ -254,30 +303,32 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="Ej. Medellín, Colombia"
-                  className="w-full pl-9 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                 />
               </div>
             </div>
           </div>
 
-          {/* Biografía */}
+          {/* BIOGRAFÍA */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">Biografía / Descripción</label>
+            <label className="text-xs font-semibold text-zinc-300">
+              Biografía / Reseña
+            </label>
             <textarea
               rows={3}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Escribe una breve descripción de tu carrera, estilo musical o sobre ti..."
+              placeholder="Cuéntanos un poco sobre tus proyectos, estilo musical o colaboraciones..."
               className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition resize-none"
             />
           </div>
 
-          {/* Modal Footer Buttons */}
-          <div className="flex items-center justify-end gap-3 border-t border-white/10 pt-4 mt-2">
+          {/* BOTONES */}
+          <div className="flex items-center justify-end gap-3 border-t border-purple-500/20 pt-4 mt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-zinc-300 hover:bg-white/10 transition"
+              className="px-5 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition"
             >
               Cancelar
             </button>
@@ -299,7 +350,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               )}
             </button>
           </div>
+
         </form>
+
       </div>
     </div>
   );

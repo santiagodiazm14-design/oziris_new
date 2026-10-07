@@ -5,13 +5,275 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PurchasesService = void 0;
+exports.PurchasesService = exports.SimulatedPurchaseDto = void 0;
 const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma/prisma.service");
+const tracks_service_1 = require("../tracks/tracks.service");
+const path_1 = require("path");
+const fs_1 = require("fs");
+class SimulatedPurchaseDto {
+    trackId;
+    trackIds;
+    paymentMethod;
+    licenseType;
+    amount;
+}
+exports.SimulatedPurchaseDto = SimulatedPurchaseDto;
 let PurchasesService = class PurchasesService {
+    prisma;
+    tracksService;
+    inMemoryPurchases = [];
+    constructor(prisma, tracksService) {
+        this.prisma = prisma;
+        this.tracksService = tracksService;
+    }
+    async simulatePayment(userId, userRole, dto) {
+        if (userRole === 'ADMIN') {
+            throw new common_1.ForbiddenException('El rol de Administrador no puede realizar compras ni descargas directas en la tienda. Esta funcionalidad es exclusiva para usuarios clientes.');
+        }
+        const trackIdsToProcess = dto.trackIds && dto.trackIds.length > 0
+            ? dto.trackIds
+            : dto.trackId
+                ? [dto.trackId]
+                : [];
+        if (trackIdsToProcess.length === 0) {
+            throw new common_1.BadRequestException('Debes proporcionar al menos un Beat (trackId o trackIds).');
+        }
+        const paymentMethod = dto.paymentMethod || 'PSE';
+        const licenseType = dto.licenseType || 'ESTÁNDAR COMERCIAL';
+        const transactionId = `OZ-SIM-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+        const completedPurchases = [];
+        for (const trackId of trackIdsToProcess) {
+            let track = null;
+            try {
+                track = await this.tracksService.findOne(trackId);
+            }
+            catch (err) {
+                throw new common_1.NotFoundException(`El beat con ID ${trackId} no fue encontrado.`);
+            }
+            const amount = dto.amount || track.price || 29.99;
+            try {
+                const existing = await this.prisma.purchase.findFirst({
+                    where: {
+                        userId,
+                        trackId,
+                        status: 'COMPLETED',
+                    },
+                });
+                if (existing) {
+                    completedPurchases.push({
+                        id: existing.id,
+                        trackId,
+                        trackTitle: track.title,
+                        amount: existing.amount,
+                        status: existing.status,
+                        paymentMethod: existing.paymentMethod || paymentMethod,
+                        licenseType: existing.licenseType || licenseType,
+                        transactionId: existing.transactionId || transactionId,
+                        createdAt: existing.createdAt,
+                        downloadUrl: `/purchases/download/${trackId}`,
+                        alreadyOwned: true,
+                    });
+                    continue;
+                }
+                const created = await this.prisma.purchase.create({
+                    data: {
+                        userId,
+                        trackId,
+                        amount,
+                        status: 'COMPLETED',
+                        paymentMethod,
+                        licenseType,
+                        transactionId,
+                    },
+                    include: {
+                        track: true,
+                    },
+                });
+                completedPurchases.push({
+                    id: created.id,
+                    trackId: created.trackId,
+                    trackTitle: track.title,
+                    amount: created.amount,
+                    status: created.status,
+                    paymentMethod: created.paymentMethod,
+                    licenseType: created.licenseType,
+                    transactionId: created.transactionId,
+                    createdAt: created.createdAt,
+                    downloadUrl: `/purchases/download/${trackId}`,
+                    alreadyOwned: false,
+                });
+            }
+            catch (dbError) {
+                console.error('Error guardando en PostgreSQL (fallback en memoria):', dbError);
+                const fallbackPurchase = {
+                    id: `sim-purch-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+                    userId,
+                    trackId,
+                    trackTitle: track.title,
+                    amount,
+                    status: 'COMPLETED',
+                    paymentMethod,
+                    licenseType,
+                    transactionId,
+                    createdAt: new Date().toISOString(),
+                    downloadUrl: `/purchases/download/${trackId}`,
+                    alreadyOwned: false,
+                };
+                this.inMemoryPurchases.push(fallbackPurchase);
+                completedPurchases.push(fallbackPurchase);
+            }
+        }
+        return {
+            success: true,
+            message: '¡Pago simulado con éxito! Tu licencia ha sido generada y el beat está disponible para descarga.',
+            transactionId,
+            paymentMethod,
+            licenseType,
+            purchasedAt: new Date().toISOString(),
+            purchases: completedPurchases,
+        };
+    }
+    async getUserPurchases(userId) {
+        try {
+            const dbPurchases = await this.prisma.purchase.findMany({
+                where: {
+                    userId,
+                    status: 'COMPLETED',
+                },
+                include: {
+                    track: {
+                        include: {
+                            producer: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    email: true,
+                                    artistName: true,
+                                    avatarUrl: true,
+                                },
+                            },
+                        },
+                    },
+                },
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            });
+            if (dbPurchases && dbPurchases.length > 0) {
+                return dbPurchases.map((p) => ({
+                    id: p.id,
+                    amount: p.amount,
+                    status: p.status,
+                    paymentMethod: p.paymentMethod || 'PSE',
+                    licenseType: p.licenseType || 'ESTÁNDAR COMERCIAL',
+                    transactionId: p.transactionId,
+                    createdAt: p.createdAt,
+                    track: p.track,
+                    downloadUrl: `/purchases/download/${p.trackId}`,
+                }));
+            }
+        }
+        catch (err) {
+            console.error('Error consultando compras en DB (usando in-memory fallback):', err);
+        }
+        const userMemoryPurchases = this.inMemoryPurchases.filter((p) => p.userId === userId);
+        const result = [];
+        for (const p of userMemoryPurchases) {
+            try {
+                const track = await this.tracksService.findOne(p.trackId);
+                result.push({
+                    ...p,
+                    track,
+                });
+            }
+            catch {
+                result.push(p);
+            }
+        }
+        return result;
+    }
+    async checkPurchaseStatus(userId, trackId) {
+        try {
+            const purchase = await this.prisma.purchase.findFirst({
+                where: {
+                    userId,
+                    trackId,
+                    status: 'COMPLETED',
+                },
+            });
+            if (purchase) {
+                return {
+                    purchased: true,
+                    purchaseId: purchase.id,
+                    transactionId: purchase.transactionId,
+                    paymentMethod: purchase.paymentMethod,
+                    licenseType: purchase.licenseType,
+                    purchasedAt: purchase.createdAt,
+                    downloadUrl: `/purchases/download/${trackId}`,
+                };
+            }
+        }
+        catch (err) {
+        }
+        const inMem = this.inMemoryPurchases.find((p) => p.userId === userId && p.trackId === trackId && p.status === 'COMPLETED');
+        if (inMem) {
+            return {
+                purchased: true,
+                purchaseId: inMem.id,
+                transactionId: inMem.transactionId,
+                paymentMethod: inMem.paymentMethod,
+                licenseType: inMem.licenseType,
+                purchasedAt: inMem.createdAt,
+                downloadUrl: `/purchases/download/${trackId}`,
+            };
+        }
+        return {
+            purchased: false,
+        };
+    }
+    async handleDownload(userId, userRole, trackId, res) {
+        if (userRole === 'ADMIN') {
+            throw new common_1.ForbiddenException('El rol de Administrador no puede utilizar el flujo de descargas de cliente.');
+        }
+        const track = await this.tracksService.findOne(trackId);
+        if (!track) {
+            throw new common_1.NotFoundException(`El Beat con ID ${trackId} no existe.`);
+        }
+        const isProducer = track.producerId === userId;
+        const purchaseStatus = await this.checkPurchaseStatus(userId, trackId);
+        if (!purchaseStatus.purchased && !isProducer) {
+            throw new common_1.ForbiddenException('Acceso denegado. Debes simular el pago y adquirir la licencia del Beat antes de poder descargarlo.');
+        }
+        const rawAudioUrl = track.fullAudioUrl || track.audioUrl;
+        if (!rawAudioUrl) {
+            throw new common_1.NotFoundException('Este beat no tiene un archivo de audio disponible para descarga.');
+        }
+        const safeTitle = (track.title || 'beat')
+            .replace(/[^a-zA-Z0-9_-]/g, '_')
+            .toLowerCase();
+        const downloadFilename = `OZIRIS_${safeTitle}_HQ.mp3`;
+        if (rawAudioUrl.startsWith('/uploads/') || rawAudioUrl.startsWith('uploads/')) {
+            const cleanPath = rawAudioUrl.startsWith('/') ? rawAudioUrl.slice(1) : rawAudioUrl;
+            const filePath = (0, path_1.join)(process.cwd(), cleanPath);
+            if ((0, fs_1.existsSync)(filePath)) {
+                res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+                res.setHeader('Content-Type', 'audio/mpeg');
+                const fileStream = (0, fs_1.createReadStream)(filePath);
+                return fileStream.pipe(res);
+            }
+        }
+        return res.redirect(rawAudioUrl);
+    }
 };
 exports.PurchasesService = PurchasesService;
 exports.PurchasesService = PurchasesService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        tracks_service_1.TracksService])
 ], PurchasesService);
 //# sourceMappingURL=purchases.service.js.map

@@ -53,17 +53,20 @@ model Track {
 }
 
 model Purchase {
-  id        String   @id @default(uuid())
-  amount    Float
-  status    String   @default("COMPLETED")
+  id            String   @id @default(uuid())
+  amount        Float
+  status        String   @default("COMPLETED")
+  paymentMethod String?  @default("SIMULATED")
+  licenseType   String?  @default("STANDARD")
+  transactionId String?
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
 
-  trackId   String
-  track     Track    @relation(fields: [trackId], references: [id])
+  trackId       String
+  track         Track    @relation(fields: [trackId], references: [id])
 
-  createdAt DateTime @default(now())
+  createdAt     DateTime @default(now())
 }
 
 model Favorite {

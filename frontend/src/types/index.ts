@@ -43,3 +43,39 @@ export interface AdminStats {
   totalSales: number;
   totalRevenue: number;
 }
+
+export interface Purchase {
+  id: string;
+  amount: number;
+  status: string;
+  paymentMethod?: string;
+  licenseType?: string;
+  transactionId?: string;
+  trackId?: string;
+  userId?: string;
+  createdAt: string;
+  track?: Track;
+  downloadUrl?: string;
+}
+
+export interface PaymentSimulationResponse {
+  success: boolean;
+  message: string;
+  transactionId: string;
+  paymentMethod: string;
+  licenseType: string;
+  purchasedAt: string;
+  purchases: Array<{
+    id: string;
+    trackId: string;
+    trackTitle: string;
+    amount: number;
+    status: string;
+    paymentMethod: string;
+    licenseType: string;
+    transactionId: string;
+    createdAt: string;
+    downloadUrl: string;
+    alreadyOwned: boolean;
+  }>;
+}

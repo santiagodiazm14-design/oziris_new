@@ -16,7 +16,8 @@ exports.TracksModule = TracksModule;
 exports.TracksModule = TracksModule = __decorate([
     (0, common_1.Module)({
         controllers: [tracks_controller_1.TracksController],
-        providers: [tracks_service_1.TracksService]
+        providers: [tracks_service_1.TracksService],
+        exports: [tracks_service_1.TracksService],
     })
 ], TracksModule);
 //# sourceMappingURL=tracks.module.js.map

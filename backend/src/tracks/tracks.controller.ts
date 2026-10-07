@@ -20,8 +20,22 @@ export class TracksController {
   constructor(private readonly tracksService: TracksService) {}
 
   @Get()
-  async findAll(@Query('genre') genre?: string): Promise<Track[]> {
-    return this.tracksService.findAll(genre);
+  async findAll(
+    @Query('genre') genre?: string,
+    @Query('search') search?: string,
+    @Query('tag') tag?: string,
+    @Query('maxPrice') maxPrice?: string,
+    @Query('category') category?: string,
+    @Query('sort') sort?: string,
+  ): Promise<Track[]> {
+    return this.tracksService.findAll({
+      genre,
+      search,
+      tag,
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      category,
+      sort,
+    });
   }
 
   @Get(':id')
