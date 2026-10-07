@@ -75,6 +75,67 @@ async function main() {
     console.log(`✅ Seeded user into PostgreSQL: ${createdUser.email} (${createdUser.role})`);
   }
 
+  // Seed default license plans
+  const licensePlans = [
+    {
+      id: 'license-basic-mp3',
+      name: 'ESTÁNDAR COMERCIAL (MP3 HQ)',
+      description: 'Ideal para proyectos independientes y lanzamientos iniciales.',
+      price: 29.99,
+      features: ['Audio MP3 320kbps', 'Hasta 100,000 reproducciones', 'Distribución digital limitada', '1 Video musical no monetizado'],
+      includesWav: false,
+      includesStems: false,
+      isExclusive: false,
+    },
+    {
+      id: 'license-premium-wav',
+      name: 'PREMIUM WAV LEASE',
+      description: 'Calidad de estudio master sin pérdida para artistas en crecimiento.',
+      price: 49.99,
+      features: ['Audio WAV 24-bit + MP3 HQ', 'Hasta 500,000 reproducciones', 'Distribución comercial', 'Radio & TV broadcasting'],
+      includesWav: true,
+      includesStems: false,
+      isExclusive: false,
+    },
+    {
+      id: 'license-unlimited-stems',
+      name: 'ILIMITADA TRACKOUT STEMS',
+      description: 'Control total de mezcla con pistas separadas (stems).',
+      price: 99.99,
+      features: ['Pistas separadas (Stems ZIP)', 'WAV 24-bit + MP3', 'Streams ilimitados', 'Uso comercial sin restricciones'],
+      includesWav: true,
+      includesStems: true,
+      isExclusive: false,
+    },
+    {
+      id: 'license-exclusive',
+      name: 'DERECHOS EXCLUSIVOS',
+      description: 'Propiedad total del instrumental. El beat se retira del catálogo.',
+      price: 299.99,
+      features: ['Propiedad total y exclusiva', 'Retiro de tienda', 'Todos los formatos + Stems', 'Sin límite de regalías'],
+      includesWav: true,
+      includesStems: true,
+      isExclusive: true,
+    },
+  ];
+
+  for (const plan of licensePlans) {
+    await prisma.licensePlan.upsert({
+      where: { id: plan.id },
+      update: {
+        name: plan.name,
+        description: plan.description,
+        price: plan.price,
+        features: plan.features,
+        includesWav: plan.includesWav,
+        includesStems: plan.includesStems,
+        isExclusive: plan.isExclusive,
+      },
+      create: plan,
+    });
+    console.log(`✅ Seeded license plan: ${plan.name}`);
+  }
+
   const adminUser = await prisma.user.findUnique({ where: { email: 'admin@oziris.test' } });
   if (adminUser) {
     const sampleTracks = [
@@ -100,6 +161,28 @@ async function main() {
         coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop',
         producerId: adminUser.id,
       },
+      {
+        id: 'track-3',
+        title: 'Midnight R&B Soul',
+        description: 'Lush rhodes and smooth bassline.',
+        price: 39.99,
+        genre: 'R&B',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+        fullAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+        coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop',
+        producerId: adminUser.id,
+      },
+      {
+        id: 'track-4',
+        title: 'Classic Boom Bap',
+        description: '90s underground hip-hop style with vinyl crackle.',
+        price: 24.99,
+        genre: 'Boom Bap',
+        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+        fullAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+        coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop',
+        producerId: adminUser.id,
+      },
     ];
 
     for (const track of sampleTracks) {
@@ -108,6 +191,7 @@ async function main() {
         update: {},
         create: track,
       });
+      console.log(`✅ Seeded track: ${track.title}`);
     }
   }
 

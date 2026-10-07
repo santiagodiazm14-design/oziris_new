@@ -66,6 +66,11 @@ export class PurchasesController {
   ) {
     const userId = req.user.id;
     const userRole = req.user.role;
-    return this.purchasesService.handleDownload(userId, userRole, trackId, res);
+    const ipAddress = req.ip || req.connection?.remoteAddress;
+    const userAgent = req.headers ? req.headers['user-agent'] : undefined;
+    return this.purchasesService.handleDownload(userId, userRole, trackId, res, {
+      ipAddress,
+      userAgent,
+    });
   }
 }

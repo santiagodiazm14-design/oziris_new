@@ -76,11 +76,6 @@ export default function PaymentSimulationModal({
       return;
     }
 
-    if (isAdmin) {
-      setError("El rol Administrador no puede simular pagos de cliente.");
-      return;
-    }
-
     try {
       setError(null);
       setIsProcessing(true);
@@ -92,6 +87,8 @@ export default function PaymentSimulationModal({
         paymentMethod,
         licenseType,
         amount: totalAmount,
+        payerName: user?.name || "Cliente Oziris",
+        payerEmail: user?.email || undefined,
       });
 
       await new Promise((r) => setTimeout(r, 650));

@@ -53,6 +53,11 @@ export interface Purchase {
   transactionId?: string;
   trackId?: string;
   userId?: string;
+  downloadCount?: number;
+  lastDownloadedAt?: string | null;
+  payerName?: string | null;
+  payerEmail?: string | null;
+  paymentProvider?: string | null;
   createdAt: string;
   track?: Track;
   downloadUrl?: string;

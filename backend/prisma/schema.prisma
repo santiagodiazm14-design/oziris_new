@@ -19,54 +19,143 @@ model User {
   role       Role     @default(USER)
   isActive   Boolean  @default(true)
   
-  tracks    Track[]
-  purchases Purchase[]
-  favorites Favorite[]
+  tracks      Track[]
+  purchases   Purchase[]
+  favorites   Favorite[]
+  simulations PaymentSimulation[]
+  downloads   DownloadLog[]
 
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
   resetPasswordCode    String?
   resetPasswordExpires DateTime?
 }
 
 model Track {
-  id           String   @id @default(uuid())
-  title        String
-  description  String?
-  price        Float
-  coverUrl     String?
-  audioUrl     String
-  fullAudioUrl String?
-  genre        String?
-  bpm          Int?
-  key          String?
-  tags         String[]
+  id             String   @id @default(uuid())
+  title          String
+  description    String?
+  price          Float
+  coverUrl       String?
+  audioUrl       String
+  fullAudioUrl   String?
+  wavUrl         String?
+  stemsUrl       String?
+  genre          String?
+  bpm            Int?
+  key            String?
+  tags           String[]
+  playsCount     Int      @default(0)
+  downloadsCount Int      @default(0)
+  isSold         Boolean  @default(false)
 
   producerId   String
-  producer     User     @relation(fields: [producerId], references: [id])
+  producer     User     @relation(fields: [producerId], references: [id], onDelete: Cascade)
 
   purchases    Purchase[]
   favorites    Favorite[]
+  downloads    DownloadLog[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
 
 model Purchase {
+  id              String   @id @default(uuid())
+  amount          Float
+  status          String   @default("COMPLETED") // COMPLETED, PENDING, CANCELLED, REFUNDED
+  paymentMethod   String?  @default("SIMULATED")
+  licenseType     String?  @default("STANDARD")
+  transactionId   String?  @unique
+
+  // Payer details captured during checkout/simulation
+  payerName       String?
+  payerEmail      String?
+  payerPhone      String?
+  payerDocument   String?
+  paymentProvider String?
+
+  downloadCount   Int       @default(0)
+  lastDownloadedAt DateTime?
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  trackId         String
+  track           Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  simulation      PaymentSimulation?
+  downloads       DownloadLog[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+}
+
+model PaymentSimulation {
   id            String   @id @default(uuid())
+  transactionId String   @unique
+  method        String   // "PSE", "Tarjeta", "Nequi", "Bancolombia", etc.
   amount        Float
-  status        String   @default("COMPLETED")
-  paymentMethod String?  @default("SIMULATED")
-  licenseType   String?  @default("STANDARD")
-  transactionId String?
+  currency      String   @default("USD")
+  status        String   @default("APPROVED") // APPROVED, PENDING, REJECTED
+
+  // Payer / Customer information
+  payerName     String?
+  payerEmail    String?
+  payerPhone    String?
+  payerDocument String?
+
+  // Method specific simulation attributes
+  bankName      String?  // for PSE (e.g. Bancolombia, Davivienda, etc.)
+  personType    String?  // "Persona natural", "Persona jurídica"
+  cardHolder    String?  // for Card
+  cardLastFour  String?  // Masked / last 4 digits
+  phoneNumber   String?  // for Nequi / Daviplata
+
+  metadata      Json?
 
   userId        String
-  user          User     @relation(fields: [userId], references: [id])
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  trackId       String
-  track         Track    @relation(fields: [trackId], references: [id])
+  purchaseId    String?  @unique
+  purchase      Purchase? @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+}
+
+model DownloadLog {
+  id           String   @id @default(uuid())
+
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  trackId      String
+  track        Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  purchaseId   String?
+  purchase     Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+
+  ipAddress    String?
+  userAgent    String?
+  fileFormat   String?  @default("MP3") // MP3, WAV, STEMS, ZIP
+  fileSize     Int?
+
+  downloadedAt DateTime @default(now())
+}
+
+model LicensePlan {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  description   String?
+  price         Float
+  features      String[]
+  includesWav   Boolean  @default(false)
+  includesStems Boolean  @default(false)
+  isExclusive   Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
 }
 
 model Favorite {

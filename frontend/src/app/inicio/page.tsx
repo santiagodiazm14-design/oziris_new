@@ -391,21 +391,19 @@ export default function InicioPage() {
                 )}
 
                 {/* MIS BEATS ADQUIRIDOS (DESCARGAS) */}
-                {!isAdmin && (
-                  <button
-                    onClick={() => setIsPurchasedBeatsModalOpen(true)}
-                    type="button"
-                    className="relative flex items-center justify-center p-2.5 bg-[#12121e] hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-purple-500/20 hover:border-emerald-500/40 rounded-full transition cursor-pointer group"
-                    title="Mis Beats Adquiridos y Descargas"
-                  >
-                    <Download className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    {purchasedTrackIds.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/50 animate-in zoom-in duration-200">
-                        {purchasedTrackIds.length}
-                      </span>
-                    )}
-                  </button>
-                )}
+                <button
+                  onClick={() => setIsPurchasedBeatsModalOpen(true)}
+                  type="button"
+                  className="relative flex items-center justify-center p-2.5 bg-[#12121e] hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-purple-500/20 hover:border-emerald-500/40 rounded-full transition cursor-pointer group"
+                  title="Mis Beats Adquiridos y Descargas"
+                >
+                  <Download className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  {purchasedTrackIds.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/50 animate-in zoom-in duration-200">
+                      {purchasedTrackIds.length}
+                    </span>
+                  )}
+                </button>
 
                 {/* FAVORITOS */}
                 <button
@@ -1059,28 +1057,26 @@ export default function InicioPage() {
                     Mi Biblioteca
                   </span>
 
-                  {!isAdmin && (
-                    <button
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        setIsPurchasedBeatsModalOpen(true);
-                      }}
-                      type="button"
-                      className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/30 text-emerald-300 transition group text-left cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition">
-                          <Download className="w-4 h-4" />
-                        </div>
-                        <span className="font-semibold text-sm text-white group-hover:text-emerald-300">
-                          Mis Beats Adquiridos
-                        </span>
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsPurchasedBeatsModalOpen(true);
+                    }}
+                    type="button"
+                    className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/30 text-emerald-300 transition group text-left cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition">
+                        <Download className="w-4 h-4" />
                       </div>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
-                        {purchasedTrackIds.length}
+                      <span className="font-semibold text-sm text-white group-hover:text-emerald-300">
+                        Mis Beats Adquiridos
                       </span>
-                    </button>
-                  )}
+                    </div>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
+                      {purchasedTrackIds.length}
+                    </span>
+                  </button>
 
                   <button
                     onClick={() => {

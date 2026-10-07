@@ -95,16 +95,21 @@ export declare class UsersService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        title: string;
         description: string | null;
         price: number;
+        title: string;
         coverUrl: string | null;
         audioUrl: string;
         fullAudioUrl: string | null;
+        wavUrl: string | null;
+        stemsUrl: string | null;
         genre: string | null;
         bpm: number | null;
         key: string | null;
         tags: string[];
+        playsCount: number;
+        downloadsCount: number;
+        isSold: boolean;
         producerId: string;
     })[]>;
     getAdminStats(): Promise<{

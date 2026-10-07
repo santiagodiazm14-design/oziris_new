@@ -283,7 +283,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsLooping((prev) => !prev);
   };
 
-  const closePlayer = () => {
+  const closePlayer = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -292,7 +292,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-  };
+  }, []);
 
   return (
     <PlayerContext.Provider

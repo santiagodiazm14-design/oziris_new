@@ -7,11 +7,21 @@ export interface SimulatePaymentPayload {
   paymentMethod?: string;
   licenseType?: string;
   amount?: number;
+  payerName?: string;
+  payerEmail?: string;
+  payerPhone?: string;
+  payerDocument?: string;
+  bankName?: string;
+  personType?: string;
+  cardHolder?: string;
+  cardLastFour?: string;
+  phoneNumber?: string;
+  metadata?: any;
 }
 
 /**
-   * Simula un pago para adquirir un beat o paquete de beats.
-   */
+ * Simula un pago para adquirir un beat o paquete de beats.
+ */
 export async function simulatePaymentApi(
   token: string,
   payload: SimulatePaymentPayload,
@@ -107,6 +117,10 @@ export async function downloadBeatFile(
   a.click();
   
   // Limpieza de memoria
-  window.URL.revokeObjectURL(url);
-  document.body.removeChild(a);
+  setTimeout(() => {
+    window.URL.revokeObjectURL(url);
+    if (a.parentNode) {
+      document.body.removeChild(a);
+    }
+  }, 100);
 }

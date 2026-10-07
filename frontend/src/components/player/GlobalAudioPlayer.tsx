@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { usePlayer } from "@/context/PlayerContext";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -31,6 +32,8 @@ import {
 import Image from "next/image";
 
 export const GlobalAudioPlayer: React.FC = () => {
+  const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
   const {
     currentTrack,
     isPlaying,
@@ -55,7 +58,29 @@ export const GlobalAudioPlayer: React.FC = () => {
   const { isFavorite: checkIsFav, toggleFavorite } = useFavorites();
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
 
-  if (!currentTrack) return null;
+  // Páginas de autenticación donde NUNCA debe mostrarse ni sonar la barra
+  const isAuthPage =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/recuperacion-clave" ||
+    pathname === "/" ||
+    Boolean(pathname?.startsWith("/login")) ||
+    Boolean(pathname?.startsWith("/register")) ||
+    Boolean(pathname?.startsWith("/recuperacion-clave"));
+
+  // Si no está autenticado o entra a login/registro, detener inmediatamente la reproducción
+  useEffect(() => {
+    if (!isAuthenticated || isAuthPage) {
+      if (currentTrack) {
+        closePlayer();
+      }
+    }
+  }, [isAuthenticated, isAuthPage, currentTrack, closePlayer]);
+
+  // Solo renderizar el reproductor cuando el usuario esté autenticado, no esté en páginas de autenticación y haya seleccionado un beat
+  if (!isAuthenticated || isAuthPage || !currentTrack) {
+    return null;
+  }
 
   const inCart = isInCart(currentTrack.id);
   const isFav = checkIsFav(currentTrack.id);

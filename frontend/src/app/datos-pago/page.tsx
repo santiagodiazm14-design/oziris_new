@@ -91,11 +91,6 @@ function DatosPagoContent() {
       return;
     }
 
-    if (isAdmin) {
-      setErrorMsg("El rol Administrador no puede simular pagos ni comprar beats. Utiliza una cuenta de usuario normal.");
-      return;
-    }
-
     if (!beatId) {
       setErrorMsg("No se especificó un Beat válido.");
       return;
@@ -110,6 +105,15 @@ function DatosPagoContent() {
         paymentMethod: metodo,
         licenseType: "ESTÁNDAR COMERCIAL (MP3 HQ)",
         amount: track ? Number(track.price) : 29.99,
+        payerName: formData.nombre,
+        payerEmail: formData.correo,
+        payerPhone: formData.telefono,
+        payerDocument: formData.documento,
+        bankName: formData.banco,
+        personType: formData.tipoPersona,
+        cardHolder: formData.titularTarjeta,
+        cardLastFour: formData.numeroTarjeta ? formData.numeroTarjeta.slice(-4) : undefined,
+        phoneNumber: formData.celularNequi,
       });
 
       setTransactionData(res);

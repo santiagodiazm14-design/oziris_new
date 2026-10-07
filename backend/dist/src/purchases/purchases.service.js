@@ -21,20 +21,29 @@ class SimulatedPurchaseDto {
     paymentMethod;
     licenseType;
     amount;
+    payerName;
+    payerEmail;
+    payerPhone;
+    payerDocument;
+    bankName;
+    personType;
+    cardHolder;
+    cardLastFour;
+    phoneNumber;
+    metadata;
 }
 exports.SimulatedPurchaseDto = SimulatedPurchaseDto;
 let PurchasesService = class PurchasesService {
     prisma;
     tracksService;
     inMemoryPurchases = [];
+    inMemorySimulations = [];
+    inMemoryDownloads = [];
     constructor(prisma, tracksService) {
         this.prisma = prisma;
         this.tracksService = tracksService;
     }
     async simulatePayment(userId, userRole, dto) {
-        if (userRole === 'ADMIN') {
-            throw new common_1.ForbiddenException('El rol de Administrador no puede realizar compras ni descargas directas en la tienda. Esta funcionalidad es exclusiva para usuarios clientes.');
-        }
         const trackIdsToProcess = dto.trackIds && dto.trackIds.length > 0
             ? dto.trackIds
             : dto.trackId
@@ -44,7 +53,7 @@ let PurchasesService = class PurchasesService {
             throw new common_1.BadRequestException('Debes proporcionar al menos un Beat (trackId o trackIds).');
         }
         const paymentMethod = dto.paymentMethod || 'PSE';
-        const licenseType = dto.licenseType || 'ESTÁNDAR COMERCIAL';
+        const licenseType = dto.licenseType || 'ESTÁNDAR COMERCIAL (MP3 HQ)';
         const transactionId = `OZ-SIM-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
         const completedPurchases = [];
         for (const trackId of trackIdsToProcess) {
@@ -89,9 +98,35 @@ let PurchasesService = class PurchasesService {
                         paymentMethod,
                         licenseType,
                         transactionId,
+                        payerName: dto.payerName || null,
+                        payerEmail: dto.payerEmail || null,
+                        payerPhone: dto.payerPhone || null,
+                        payerDocument: dto.payerDocument || null,
+                        paymentProvider: dto.bankName || (paymentMethod === 'Tarjeta' ? 'Tarjeta de Crédito/Débito' : paymentMethod),
+                        simulation: {
+                            create: {
+                                transactionId: `${transactionId}-${trackId.substring(0, 6)}`,
+                                method: paymentMethod,
+                                amount,
+                                currency: 'USD',
+                                status: 'APPROVED',
+                                payerName: dto.payerName || null,
+                                payerEmail: dto.payerEmail || null,
+                                payerPhone: dto.payerPhone || null,
+                                payerDocument: dto.payerDocument || null,
+                                bankName: dto.bankName || null,
+                                personType: dto.personType || null,
+                                cardHolder: dto.cardHolder || null,
+                                cardLastFour: dto.cardLastFour || null,
+                                phoneNumber: dto.phoneNumber || null,
+                                metadata: dto.metadata ? dto.metadata : undefined,
+                                userId,
+                            },
+                        },
                     },
                     include: {
                         track: true,
+                        simulation: true,
                     },
                 });
                 completedPurchases.push({
@@ -159,6 +194,7 @@ let PurchasesService = class PurchasesService {
                             },
                         },
                     },
+                    simulation: true,
                 },
                 orderBy: {
                     createdAt: 'desc',
@@ -167,11 +203,17 @@ let PurchasesService = class PurchasesService {
             if (dbPurchases && dbPurchases.length > 0) {
                 return dbPurchases.map((p) => ({
                     id: p.id,
+                    trackId: p.trackId,
                     amount: p.amount,
                     status: p.status,
                     paymentMethod: p.paymentMethod || 'PSE',
                     licenseType: p.licenseType || 'ESTÁNDAR COMERCIAL',
                     transactionId: p.transactionId,
+                    downloadCount: p.downloadCount,
+                    lastDownloadedAt: p.lastDownloadedAt,
+                    payerName: p.payerName,
+                    payerEmail: p.payerEmail,
+                    paymentProvider: p.paymentProvider,
                     createdAt: p.createdAt,
                     track: p.track,
                     downloadUrl: `/purchases/download/${p.trackId}`,
@@ -188,6 +230,7 @@ let PurchasesService = class PurchasesService {
                 const track = await this.tracksService.findOne(p.trackId);
                 result.push({
                     ...p,
+                    trackId: p.trackId,
                     track,
                 });
             }
@@ -214,6 +257,8 @@ let PurchasesService = class PurchasesService {
                     paymentMethod: purchase.paymentMethod,
                     licenseType: purchase.licenseType,
                     purchasedAt: purchase.createdAt,
+                    downloadCount: purchase.downloadCount,
+                    lastDownloadedAt: purchase.lastDownloadedAt,
                     downloadUrl: `/purchases/download/${trackId}`,
                 };
             }
@@ -229,6 +274,8 @@ let PurchasesService = class PurchasesService {
                 paymentMethod: inMem.paymentMethod,
                 licenseType: inMem.licenseType,
                 purchasedAt: inMem.createdAt,
+                downloadCount: inMem.downloadCount || 0,
+                lastDownloadedAt: inMem.lastDownloadedAt || null,
                 downloadUrl: `/purchases/download/${trackId}`,
             };
         }
@@ -236,18 +283,58 @@ let PurchasesService = class PurchasesService {
             purchased: false,
         };
     }
-    async handleDownload(userId, userRole, trackId, res) {
-        if (userRole === 'ADMIN') {
-            throw new common_1.ForbiddenException('El rol de Administrador no puede utilizar el flujo de descargas de cliente.');
+    async handleDownload(userId, userRole, trackId, res, meta) {
+        let track = null;
+        try {
+            track = await this.tracksService.findOne(trackId);
         }
-        const track = await this.tracksService.findOne(trackId);
+        catch {
+            throw new common_1.NotFoundException(`El Beat con ID ${trackId} no existe.`);
+        }
         if (!track) {
             throw new common_1.NotFoundException(`El Beat con ID ${trackId} no existe.`);
         }
         const isProducer = track.producerId === userId;
+        const isAdmin = userRole === 'ADMIN';
         const purchaseStatus = await this.checkPurchaseStatus(userId, trackId);
-        if (!purchaseStatus.purchased && !isProducer) {
+        if (!purchaseStatus.purchased && !isProducer && !isAdmin) {
             throw new common_1.ForbiddenException('Acceso denegado. Debes simular el pago y adquirir la licencia del Beat antes de poder descargarlo.');
+        }
+        try {
+            await this.prisma.downloadLog.create({
+                data: {
+                    userId,
+                    trackId,
+                    purchaseId: purchaseStatus.purchaseId || null,
+                    ipAddress: meta?.ipAddress || null,
+                    userAgent: meta?.userAgent || null,
+                    fileFormat: 'MP3',
+                },
+            });
+            if (purchaseStatus.purchaseId) {
+                await this.prisma.purchase.update({
+                    where: { id: purchaseStatus.purchaseId },
+                    data: {
+                        downloadCount: { increment: 1 },
+                        lastDownloadedAt: new Date(),
+                    },
+                });
+            }
+            await this.prisma.track.update({
+                where: { id: trackId },
+                data: {
+                    downloadsCount: { increment: 1 },
+                },
+            });
+        }
+        catch (logError) {
+            console.warn('Advertencia al registrar log de descarga en DB:', logError?.message || logError);
+            this.inMemoryDownloads.push({
+                userId,
+                trackId,
+                purchaseId: purchaseStatus.purchaseId,
+                downloadedAt: new Date().toISOString(),
+            });
         }
         const rawAudioUrl = track.fullAudioUrl || track.audioUrl;
         if (!rawAudioUrl) {
@@ -257,17 +344,52 @@ let PurchasesService = class PurchasesService {
             .replace(/[^a-zA-Z0-9_-]/g, '_')
             .toLowerCase();
         const downloadFilename = `OZIRIS_${safeTitle}_HQ.mp3`;
+        let localRelativePath = null;
         if (rawAudioUrl.startsWith('/uploads/') || rawAudioUrl.startsWith('uploads/')) {
-            const cleanPath = rawAudioUrl.startsWith('/') ? rawAudioUrl.slice(1) : rawAudioUrl;
-            const filePath = (0, path_1.join)(process.cwd(), cleanPath);
-            if ((0, fs_1.existsSync)(filePath)) {
-                res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
-                res.setHeader('Content-Type', 'audio/mpeg');
-                const fileStream = (0, fs_1.createReadStream)(filePath);
-                return fileStream.pipe(res);
+            localRelativePath = rawAudioUrl.startsWith('/') ? rawAudioUrl.slice(1) : rawAudioUrl;
+        }
+        else if (rawAudioUrl.includes('/uploads/')) {
+            const parts = rawAudioUrl.split('/uploads/');
+            if (parts[1]) {
+                localRelativePath = `uploads/${parts[1]}`;
             }
         }
-        return res.redirect(rawAudioUrl);
+        if (localRelativePath) {
+            const candidates = [
+                (0, path_1.join)(process.cwd(), localRelativePath),
+                (0, path_1.join)(process.cwd(), 'backend', localRelativePath),
+                (0, path_1.join)(__dirname, '..', '..', localRelativePath),
+            ];
+            for (const p of candidates) {
+                if ((0, fs_1.existsSync)(p)) {
+                    res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+                    res.setHeader('Content-Type', 'audio/mpeg');
+                    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+                    const fileStream = (0, fs_1.createReadStream)(p);
+                    return fileStream.pipe(res);
+                }
+            }
+        }
+        if (rawAudioUrl.startsWith('http://') || rawAudioUrl.startsWith('https://')) {
+            try {
+                const remoteRes = await fetch(rawAudioUrl);
+                if (!remoteRes.ok) {
+                    throw new Error(`Remote audio returned status ${remoteRes.status}`);
+                }
+                const arrayBuffer = await remoteRes.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+                res.setHeader('Content-Type', remoteRes.headers.get('content-type') || 'audio/mpeg');
+                res.setHeader('Content-Length', buffer.length);
+                res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+                return res.end(buffer);
+            }
+            catch (proxyError) {
+                console.error('Error al hacer proxy/streaming del audio remoto:', proxyError);
+                return res.redirect(rawAudioUrl);
+            }
+        }
+        throw new common_1.NotFoundException('No se pudo localizar el archivo físico de audio del beat.');
     }
 };
 exports.PurchasesService = PurchasesService;

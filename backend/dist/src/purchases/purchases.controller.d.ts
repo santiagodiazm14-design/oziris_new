@@ -19,6 +19,8 @@ export declare class PurchasesController {
         paymentMethod: any;
         licenseType: any;
         purchasedAt: any;
+        downloadCount: any;
+        lastDownloadedAt: any;
         downloadUrl: string;
     } | {
         purchased: boolean;
@@ -27,6 +29,8 @@ export declare class PurchasesController {
         paymentMethod?: undefined;
         licenseType?: undefined;
         purchasedAt?: undefined;
+        downloadCount?: undefined;
+        lastDownloadedAt?: undefined;
         downloadUrl?: undefined;
     }>;
     downloadBeat(req: any, trackId: string, res: any): Promise<void | import("express").Response<any, Record<string, any>>>;

@@ -16,11 +16,23 @@ export class SimulatedPurchaseDto {
   paymentMethod?: string;
   licenseType?: string;
   amount?: number;
+  payerName?: string;
+  payerEmail?: string;
+  payerPhone?: string;
+  payerDocument?: string;
+  bankName?: string;
+  personType?: string;
+  cardHolder?: string;
+  cardLastFour?: string;
+  phoneNumber?: string;
+  metadata?: any;
 }
 
 @Injectable()
 export class PurchasesService {
   private inMemoryPurchases: any[] = [];
+  private inMemorySimulations: any[] = [];
+  private inMemoryDownloads: any[] = [];
 
   constructor(
     private readonly prisma: PrismaService,
@@ -28,20 +40,14 @@ export class PurchasesService {
   ) {}
 
   /**
-   * Simula un pago y registra la compra/licencia para el usuario autenticado.
-   * Restricción de Rol: Solo disponible para usuarios normales (USER, BUYER, PRODUCER), no ADMIN.
+   * Simula un pago y registra la compra/licencia para el usuario autenticado en la base de datos PostgreSQL.
+   * Todos los roles autenticados (USER, BUYER, PRODUCER, ADMIN) pueden simular compras.
    */
   async simulatePayment(
     userId: string,
     userRole: string,
     dto: SimulatedPurchaseDto,
   ) {
-    if (userRole === 'ADMIN') {
-      throw new ForbiddenException(
-        'El rol de Administrador no puede realizar compras ni descargas directas en la tienda. Esta funcionalidad es exclusiva para usuarios clientes.',
-      );
-    }
-
     const trackIdsToProcess: string[] = dto.trackIds && dto.trackIds.length > 0
       ? dto.trackIds
       : dto.trackId
@@ -53,7 +59,7 @@ export class PurchasesService {
     }
 
     const paymentMethod = dto.paymentMethod || 'PSE';
-    const licenseType = dto.licenseType || 'ESTÁNDAR COMERCIAL';
+    const licenseType = dto.licenseType || 'ESTÁNDAR COMERCIAL (MP3 HQ)';
     const transactionId = `OZ-SIM-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
     const completedPurchases: any[] = [];
@@ -95,7 +101,7 @@ export class PurchasesService {
           continue;
         }
 
-        // Crear registro en la base de datos PostgreSQL
+        // Crear registro en la tabla Purchase y PaymentSimulation de PostgreSQL
         const created = await this.prisma.purchase.create({
           data: {
             userId,
@@ -105,9 +111,35 @@ export class PurchasesService {
             paymentMethod,
             licenseType,
             transactionId,
+            payerName: dto.payerName || null,
+            payerEmail: dto.payerEmail || null,
+            payerPhone: dto.payerPhone || null,
+            payerDocument: dto.payerDocument || null,
+            paymentProvider: dto.bankName || (paymentMethod === 'Tarjeta' ? 'Tarjeta de Crédito/Débito' : paymentMethod),
+            simulation: {
+              create: {
+                transactionId: `${transactionId}-${trackId.substring(0, 6)}`,
+                method: paymentMethod,
+                amount,
+                currency: 'USD',
+                status: 'APPROVED',
+                payerName: dto.payerName || null,
+                payerEmail: dto.payerEmail || null,
+                payerPhone: dto.payerPhone || null,
+                payerDocument: dto.payerDocument || null,
+                bankName: dto.bankName || null,
+                personType: dto.personType || null,
+                cardHolder: dto.cardHolder || null,
+                cardLastFour: dto.cardLastFour || null,
+                phoneNumber: dto.phoneNumber || null,
+                metadata: dto.metadata ? dto.metadata : undefined,
+                userId,
+              },
+            },
           },
           include: {
             track: true,
+            simulation: true,
           },
         });
 
@@ -181,6 +213,7 @@ export class PurchasesService {
               },
             },
           },
+          simulation: true,
         },
         orderBy: {
           createdAt: 'desc',
@@ -190,11 +223,17 @@ export class PurchasesService {
       if (dbPurchases && dbPurchases.length > 0) {
         return dbPurchases.map((p) => ({
           id: p.id,
+          trackId: p.trackId,
           amount: p.amount,
           status: p.status,
           paymentMethod: p.paymentMethod || 'PSE',
           licenseType: p.licenseType || 'ESTÁNDAR COMERCIAL',
           transactionId: p.transactionId,
+          downloadCount: p.downloadCount,
+          lastDownloadedAt: p.lastDownloadedAt,
+          payerName: p.payerName,
+          payerEmail: p.payerEmail,
+          paymentProvider: p.paymentProvider,
           createdAt: p.createdAt,
           track: p.track,
           downloadUrl: `/purchases/download/${p.trackId}`,
@@ -212,6 +251,7 @@ export class PurchasesService {
         const track = await this.tracksService.findOne(p.trackId);
         result.push({
           ...p,
+          trackId: p.trackId,
           track,
         });
       } catch {
@@ -222,7 +262,7 @@ export class PurchasesService {
   }
 
   /**
-   * Verifica si un usuario ya adquirió un beat específico.
+   * Verifica si un usuario ya adquirió un beat específico o tiene permiso de descarga.
    */
   async checkPurchaseStatus(userId: string, trackId: string) {
     try {
@@ -242,6 +282,8 @@ export class PurchasesService {
           paymentMethod: purchase.paymentMethod,
           licenseType: purchase.licenseType,
           purchasedAt: purchase.createdAt,
+          downloadCount: purchase.downloadCount,
+          lastDownloadedAt: purchase.lastDownloadedAt,
           downloadUrl: `/purchases/download/${trackId}`,
         };
       }
@@ -261,6 +303,8 @@ export class PurchasesService {
         paymentMethod: inMem.paymentMethod,
         licenseType: inMem.licenseType,
         purchasedAt: inMem.createdAt,
+        downloadCount: inMem.downloadCount || 0,
+        lastDownloadedAt: inMem.lastDownloadedAt || null,
         downloadUrl: `/purchases/download/${trackId}`,
       };
     }
@@ -272,33 +316,77 @@ export class PurchasesService {
 
   /**
    * Endpoint de entrega y descarga directa del archivo de audio del beat.
-   * Valida rol, autenticación y propiedad/licencia de compra previa.
+   * Valida permisos (compra previa, productor del beat o administrador).
+   * Hace streaming directo del archivo (local o remoto) con headers de Content-Disposition y CORS.
    */
   async handleDownload(
     userId: string,
     userRole: string,
     trackId: string,
     res: Response,
+    meta?: { ipAddress?: string; userAgent?: string },
   ) {
-    if (userRole === 'ADMIN') {
-      throw new ForbiddenException(
-        'El rol de Administrador no puede utilizar el flujo de descargas de cliente.',
-      );
+    let track = null;
+    try {
+      track = await this.tracksService.findOne(trackId);
+    } catch {
+      throw new NotFoundException(`El Beat con ID ${trackId} no existe.`);
     }
 
-    const track = await this.tracksService.findOne(trackId);
     if (!track) {
       throw new NotFoundException(`El Beat con ID ${trackId} no existe.`);
     }
 
-    // Verificar si el usuario compró el track o es el productor del mismo
+    // Permitir descarga si el usuario compró el beat, o es el productor, o es ADMIN
     const isProducer = track.producerId === userId;
+    const isAdmin = userRole === 'ADMIN';
     const purchaseStatus = await this.checkPurchaseStatus(userId, trackId);
 
-    if (!purchaseStatus.purchased && !isProducer) {
+    if (!purchaseStatus.purchased && !isProducer && !isAdmin) {
       throw new ForbiddenException(
         'Acceso denegado. Debes simular el pago y adquirir la licencia del Beat antes de poder descargarlo.',
       );
+    }
+
+    // Registrar la descarga en la base de datos PostgreSQL
+    try {
+      await this.prisma.downloadLog.create({
+        data: {
+          userId,
+          trackId,
+          purchaseId: purchaseStatus.purchaseId || null,
+          ipAddress: meta?.ipAddress || null,
+          userAgent: meta?.userAgent || null,
+          fileFormat: 'MP3',
+        },
+      });
+
+      // Incrementar contador en Purchase si aplica
+      if (purchaseStatus.purchaseId) {
+        await this.prisma.purchase.update({
+          where: { id: purchaseStatus.purchaseId },
+          data: {
+            downloadCount: { increment: 1 },
+            lastDownloadedAt: new Date(),
+          },
+        });
+      }
+
+      // Incrementar contador de descargas en Track
+      await this.prisma.track.update({
+        where: { id: trackId },
+        data: {
+          downloadsCount: { increment: 1 },
+        },
+      });
+    } catch (logError) {
+      console.warn('Advertencia al registrar log de descarga en DB:', logError?.message || logError);
+      this.inMemoryDownloads.push({
+        userId,
+        trackId,
+        purchaseId: purchaseStatus.purchaseId,
+        downloadedAt: new Date().toISOString(),
+      });
     }
 
     const rawAudioUrl = track.fullAudioUrl || track.audioUrl;
@@ -306,26 +394,65 @@ export class PurchasesService {
       throw new NotFoundException('Este beat no tiene un archivo de audio disponible para descarga.');
     }
 
-    // Limpiar nombre para la descarga
+    // Limpiar y preparar nombre del archivo descargable
     const safeTitle = (track.title || 'beat')
       .replace(/[^a-zA-Z0-9_-]/g, '_')
       .toLowerCase();
     const downloadFilename = `OZIRIS_${safeTitle}_HQ.mp3`;
 
-    // Si es un archivo local en uploads
-    if (rawAudioUrl.startsWith('/uploads/') || rawAudioUrl.startsWith('uploads/')) {
-      const cleanPath = rawAudioUrl.startsWith('/') ? rawAudioUrl.slice(1) : rawAudioUrl;
-      const filePath = join(process.cwd(), cleanPath);
+    // 1. Si es un archivo local en uploads (por ruta relativa o URL local)
+    let localRelativePath: string | null = null;
 
-      if (existsSync(filePath)) {
-        res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
-        res.setHeader('Content-Type', 'audio/mpeg');
-        const fileStream = createReadStream(filePath);
-        return fileStream.pipe(res);
+    if (rawAudioUrl.startsWith('/uploads/') || rawAudioUrl.startsWith('uploads/')) {
+      localRelativePath = rawAudioUrl.startsWith('/') ? rawAudioUrl.slice(1) : rawAudioUrl;
+    } else if (rawAudioUrl.includes('/uploads/')) {
+      const parts = rawAudioUrl.split('/uploads/');
+      if (parts[1]) {
+        localRelativePath = `uploads/${parts[1]}`;
       }
     }
 
-    // Si es una URL externa (e.g. SoundHelix o CDN), redirigir
-    return res.redirect(rawAudioUrl);
+    if (localRelativePath) {
+      const candidates = [
+        join(process.cwd(), localRelativePath),
+        join(process.cwd(), 'backend', localRelativePath),
+        join(__dirname, '..', '..', localRelativePath),
+      ];
+
+      for (const p of candidates) {
+        if (existsSync(p)) {
+          res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+          res.setHeader('Content-Type', 'audio/mpeg');
+          res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+          const fileStream = createReadStream(p);
+          return fileStream.pipe(res);
+        }
+      }
+    }
+
+    // 2. Si es una URL externa (e.g. SoundHelix o CDN remoto), hacer streaming server-side para evitar bloqueos CORS
+    if (rawAudioUrl.startsWith('http://') || rawAudioUrl.startsWith('https://')) {
+      try {
+        const remoteRes = await fetch(rawAudioUrl);
+        if (!remoteRes.ok) {
+          throw new Error(`Remote audio returned status ${remoteRes.status}`);
+        }
+
+        const arrayBuffer = await remoteRes.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+        res.setHeader('Content-Type', remoteRes.headers.get('content-type') || 'audio/mpeg');
+        res.setHeader('Content-Length', buffer.length);
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+        return res.end(buffer);
+      } catch (proxyError) {
+        console.error('Error al hacer proxy/streaming del audio remoto:', proxyError);
+        // Como último recurso intentar redirección
+        return res.redirect(rawAudioUrl);
+      }
+    }
+
+    throw new NotFoundException('No se pudo localizar el archivo físico de audio del beat.');
   }
 }
