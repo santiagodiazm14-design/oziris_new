@@ -8,165 +8,180 @@ datasource db {
 
 model User {
   id         String   @id @default(uuid())
-  email      String   @unique
-  password   String
-  name       String
-  lastName   String?
-  artistName String?
-  location   String?
-  avatarUrl  String?
-  bio        String?
-  role       Role     @default(USER)
-  isActive   Boolean  @default(true)
+  email      String   @unique @map("correo")
+  password   String   @map("contrasena")
+  name       String   @map("nombre")
+  lastName   String?  @map("apellido")
+  artistName String?  @map("nombre_artistico")
+  location   String?  @map("ubicacion")
+  avatarUrl  String?  @map("url_avatar")
+  bio        String?  @map("biografia")
+  role       Role     @default(USER) @map("rol")
+  isActive   Boolean  @default(true) @map("activo")
   
-  tracks      Track[]
-  purchases   Purchase[]
-  favorites   Favorite[]
-  simulations PaymentSimulation[]
-  downloads   DownloadLog[]
+  tracks         Track[]
+  purchases      Purchase[]
+  favorites      Favorite[]
+  simulations    PaymentSimulation[]
+  downloads      DownloadLog[]
+  passwordResets PasswordReset[]
+  artist         Artist?
 
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  resetPasswordCode    String?
-  resetPasswordExpires DateTime?
+  createdAt            DateTime  @default(now()) @map("creado_en")
+  updatedAt            DateTime  @updatedAt @map("actualizado_en")
+  resetPasswordCode    String?   @map("codigo_recuperacion")
+  resetPasswordExpires DateTime? @map("expiracion_codigo")
+
+  @@map("usuarios")
 }
 
 model Track {
   id             String   @id @default(uuid())
-  title          String
-  description    String?
-  price          Float
-  coverUrl       String?
-  audioUrl       String
-  fullAudioUrl   String?
-  wavUrl         String?
-  stemsUrl       String?
-  genre          String?
+  title          String   @map("titulo")
+  description    String?  @map("descripcion")
+  price          Float    @map("precio")
+  coverUrl       String?  @map("url_portada")
+  audioUrl       String   @map("url_audio")
+  fullAudioUrl   String?  @map("url_audio_completo")
+  wavUrl         String?  @map("url_wav")
+  stemsUrl       String?  @map("url_stems")
+  genre          String?  @map("genero")
   bpm            Int?
-  key            String?
-  tags           String[]
-  playsCount     Int      @default(0)
-  downloadsCount Int      @default(0)
-  isSold         Boolean  @default(false)
+  key            String?  @map("tonalidad")
+  tags           String[] @map("etiquetas")
+  playsCount     Int      @default(0) @map("reproducciones")
+  downloadsCount Int      @default(0) @map("descargas")
+  isSold         Boolean  @default(false) @map("vendido")
 
-  producerId   String
-  producer     User     @relation(fields: [producerId], references: [id], onDelete: Cascade)
+  producerId   String @map("productor_id")
+  producer     User   @relation(fields: [producerId], references: [id], onDelete: Cascade)
 
   purchases    Purchase[]
   favorites    Favorite[]
   downloads    DownloadLog[]
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now()) @map("creado_en")
+  updatedAt    DateTime @updatedAt @map("actualizado_en")
+
+  @@map("pistas")
 }
 
 model Purchase {
   id              String   @id @default(uuid())
-  amount          Float
-  status          String   @default("COMPLETED") // COMPLETED, PENDING, CANCELLED, REFUNDED
-  paymentMethod   String?  @default("SIMULATED")
-  licenseType     String?  @default("STANDARD")
-  transactionId   String?  @unique
+  amount          Float    @map("monto")
+  status          String   @default("COMPLETED") @map("estado") // COMPLETED, PENDING, CANCELLED, REFUNDED
+  paymentMethod   String?  @default("SIMULATED") @map("metodo_pago")
+  licenseType     String?  @default("STANDARD") @map("tipo_licencia")
+  transactionId   String?  @unique @map("transaccion_id")
 
   // Payer details captured during checkout/simulation
-  payerName       String?
-  payerEmail      String?
-  payerPhone      String?
-  payerDocument   String?
-  paymentProvider String?
+  payerName       String?  @map("nombre_pagador")
+  payerEmail      String?  @map("correo_pagador")
+  payerPhone      String?  @map("telefono_pagador")
+  payerDocument   String?  @map("documento_pagador")
+  paymentProvider String?  @map("proveedor_pago")
 
-  downloadCount   Int       @default(0)
-  lastDownloadedAt DateTime?
+  downloadCount    Int       @default(0) @map("conteo_descargas")
+  lastDownloadedAt DateTime? @map("ultima_descarga_en")
 
-  userId          String
+  userId          String   @map("usuario_id")
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  trackId         String
+  trackId         String   @map("pista_id")
   track           Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
 
   simulation      PaymentSimulation?
   downloads       DownloadLog[]
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now()) @updatedAt
+  createdAt       DateTime @default(now()) @map("creado_en")
+  updatedAt       DateTime @default(now()) @updatedAt @map("actualizado_en")
+
+  @@map("compras")
 }
 
 model PaymentSimulation {
   id            String   @id @default(uuid())
-  transactionId String   @unique
-  method        String   // "PSE", "Tarjeta", "Nequi", "Bancolombia", etc.
-  amount        Float
-  currency      String   @default("USD")
-  status        String   @default("APPROVED") // APPROVED, PENDING, REJECTED
+  transactionId String   @unique @map("transaccion_id")
+  method        String   @map("metodo") // "PSE", "Tarjeta", "Nequi", "Bancolombia", etc.
+  amount        Float    @map("monto")
+  currency      String   @default("USD") @map("moneda")
+  status        String   @default("APPROVED") @map("estado") // APPROVED, PENDING, REJECTED
 
   // Payer / Customer information
-  payerName     String?
-  payerEmail    String?
-  payerPhone    String?
-  payerDocument String?
+  payerName     String?  @map("nombre_pagador")
+  payerEmail    String?  @map("correo_pagador")
+  payerPhone    String?  @map("telefono_pagador")
+  payerDocument String?  @map("documento_pagador")
 
   // Method specific simulation attributes
-  bankName      String?  // for PSE (e.g. Bancolombia, Davivienda, etc.)
-  personType    String?  // "Persona natural", "Persona jurídica"
-  cardHolder    String?  // for Card
-  cardLastFour  String?  // Masked / last 4 digits
-  phoneNumber   String?  // for Nequi / Daviplata
+  bankName      String?  @map("nombre_banco") // for PSE (e.g. Bancolombia, Davivienda, etc.)
+  personType    String?  @map("tipo_persona") // "Persona natural", "Persona jurídica"
+  cardHolder    String?  @map("titular_tarjeta") // for Card
+  cardLastFour  String?  @map("ultimos_cuatro_tarjeta") // Masked / last 4 digits
+  phoneNumber   String?  @map("numero_telefono") // for Nequi / Daviplata
 
-  metadata      Json?
+  metadata      Json?    @map("metadatos")
 
-  userId        String
+  userId        String   @map("usuario_id")
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  purchaseId    String?  @unique
+  purchaseId    String?  @unique @map("compra_id")
   purchase      Purchase? @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  createdAt     DateTime @default(now()) @map("creado_en")
+  updatedAt     DateTime @default(now()) @updatedAt @map("actualizado_en")
+
+  @@map("simulaciones_pago")
 }
 
 model DownloadLog {
   id           String   @id @default(uuid())
 
-  userId       String
+  userId       String   @map("usuario_id")
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  trackId      String
+  trackId      String   @map("pista_id")
   track        Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
 
-  purchaseId   String?
+  purchaseId   String?  @map("compra_id")
   purchase     Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
 
-  ipAddress    String?
-  userAgent    String?
-  fileFormat   String?  @default("MP3") // MP3, WAV, STEMS, ZIP
-  fileSize     Int?
+  ipAddress    String?  @map("direccion_ip")
+  userAgent    String?  @map("agente_usuario")
+  fileFormat   String?  @default("MP3") @map("formato_archivo") // MP3, WAV, STEMS, ZIP
+  fileSize     Int?     @map("tamano_archivo")
 
-  downloadedAt DateTime @default(now())
+  downloadedAt DateTime @default(now()) @map("descargado_en")
+
+  @@map("registros_descargas")
 }
 
 model LicensePlan {
   id            String   @id @default(uuid())
-  name          String   @unique
-  description   String?
-  price         Float
-  features      String[]
-  includesWav   Boolean  @default(false)
-  includesStems Boolean  @default(false)
-  isExclusive   Boolean  @default(false)
+  name          String   @unique @map("nombre")
+  description   String?  @map("descripcion")
+  price         Float    @map("precio")
+  features      String[] @map("caracteristicas")
+  includesWav   Boolean  @default(false) @map("incluye_wav")
+  includesStems Boolean  @default(false) @map("incluye_stems")
+  isExclusive   Boolean  @default(false) @map("es_exclusivo")
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  createdAt     DateTime @default(now()) @map("creado_en")
+  updatedAt     DateTime @default(now()) @updatedAt @map("actualizado_en")
+
+  @@map("planes_licencia")
 }
 
 model Favorite {
   id        String   @id @default(uuid())
-  userId    String
+  userId    String   @map("usuario_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trackId   String
+  trackId   String   @map("pista_id")
   track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("creado_en")
 
   @@unique([userId, trackId])
+  @@map("favoritos")
 }
 
 enum Role {
@@ -174,4 +189,46 @@ enum Role {
   ADMIN
   PRODUCER
   BUYER
+
+  @@map("rol")
 }
+
+model PasswordReset {
+  id        String    @id @default(uuid())
+  email     String    @map("correo")
+  code      String    @map("codigo")
+  expiresAt DateTime  @map("expira_en")
+  used      Boolean   @default(false) @map("usado")
+  usedAt    DateTime? @map("usado_en")
+  attempts  Int       @default(0) @map("intentos")
+  ipAddress String?   @map("direccion_ip")
+  createdAt DateTime  @default(now()) @map("creado_en")
+
+  userId    String    @map("usuario_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([code])
+  @@map("restablecimiento_contrasenas")
+}
+
+model Artist {
+  id           String   @id @default(uuid())
+  artisticName String   @map("nombre_artistico")
+  bio          String?  @map("biografia")
+  genre        String?  @map("genero_principal") // Ej: Trap, Reggaeton, Drill, Hip Hop, etc.
+  bannerUrl    String?  @map("url_portada")
+  spotifyUrl   String?  @map("url_spotify")
+  instagramUrl String?  @map("url_instagram")
+  youtubeUrl   String?  @map("url_youtube")
+  verified     Boolean  @default(false) @map("verificado")
+
+  userId       String   @unique @map("usuario_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now()) @map("creado_en")
+  updatedAt    DateTime @updatedAt @map("actualizado_en")
+
+  @@map("artistas")
+}
+

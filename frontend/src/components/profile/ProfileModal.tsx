@@ -32,7 +32,7 @@ function getImageUrl(url?: string): string | null {
 }
 
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
-  const { user, token, updateCurrentUser, isAdmin } = useAuth();
+  const { user, token, updateCurrentUser, isAdmin, isArtist } = useAuth();
 
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -152,10 +152,12 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
             <div>
               <h2 className="text-xl font-bold text-white tracking-tight">
-                Mi Perfil de Usuario
+                {isArtist ? "Mi Perfil de Artista" : "Mi Perfil de Usuario"}
               </h2>
               <p className="text-xs text-zinc-400">
-                Personaliza tu información pública y datos artísticos
+                {isArtist
+                  ? "Personaliza tu información pública, nombre de productor y bio"
+                  : "Personaliza tus datos de cuenta y preferencias de oyente"}
               </p>
             </div>
           </div>
@@ -229,7 +231,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               <Shield className="w-4 h-4 text-cyan-400 shrink-0" />
               <div>
                 <span className="block text-[10px] text-zinc-500">Tipo de Cuenta</span>
-                <span className="text-cyan-300 font-bold uppercase">{user?.role || "USER"}</span>
+                <span className={`font-bold uppercase ${isArtist ? 'text-blue-400' : 'text-purple-300'}`}>
+                  {isAdmin ? 'ADMINISTRADOR' : isArtist ? 'ARTISTA / PRODUCTOR' : 'USUARIO / OYENTE'}
+                </span>
               </div>
             </div>
           </div>
@@ -271,43 +275,72 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           </div>
 
           {/* CAMPOS DE ARTISTA Y UBICACIÓN */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-300">
-                Nombre de Artista / Productor
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <Mic className="h-4 w-4 text-zinc-500" />
+          {isArtist ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-300">
+                  Nombre de Artista / Productor
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Mic className="h-4 w-4 text-blue-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={artistName}
+                    onChange={(e) => setArtistName(e.target.value)}
+                    placeholder="Ej. OZIRIS Lil Trap / Juan Beatmaker"
+                    className="w-full pl-10 pr-3 py-2.5 bg-blue-500/5 border border-blue-500/20 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={artistName}
-                  onChange={(e) => setArtistName(e.target.value)}
-                  placeholder="Ej. OZIRIS Lil Trap / Juan Beatmaker"
-                  className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                />
               </div>
-            </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-300">
-                Ubicación (Ciudad / País)
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <MapPin className="h-4 w-4 text-zinc-500" />
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-300">
+                  Ubicación (Ciudad / País)
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <MapPin className="h-4 w-4 text-zinc-500" />
+                  </div>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Ej. Medellín, Colombia"
+                    className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Ej. Medellín, Colombia"
-                  className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                />
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-300">
+                  Ubicación (Ciudad / País)
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <MapPin className="h-4 w-4 text-zinc-500" />
+                  </div>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Ej. Medellín, Colombia"
+                    className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 shrink-0 text-purple-400" />
+                <span>
+                  Cuenta de Oyente: Puedes explorar, escuchar beats y comprar licencias oficiales. La subida y venta de instrumentales está habilitada exclusivamente para perfiles de Artista.
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* BIOGRAFÍA */}
           <div className="space-y-1.5">

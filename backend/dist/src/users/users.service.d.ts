@@ -1,4 +1,16 @@
 import { PrismaService } from '../prisma/prisma.service';
+export interface ArtistResponse {
+    id: string;
+    artisticName: string;
+    bio?: string | null;
+    genre?: string | null;
+    bannerUrl?: string | null;
+    spotifyUrl?: string | null;
+    instagramUrl?: string | null;
+    youtubeUrl?: string | null;
+    verified: boolean;
+    createdAt: string;
+}
 export interface UserResponse {
     id: string;
     email: string;
@@ -14,6 +26,7 @@ export interface UserResponse {
     updatedAt: string;
     resetPasswordCode?: string | null;
     resetPasswordExpires?: string | Date | null;
+    artist?: ArtistResponse | null;
 }
 export declare class UsersService {
     private prisma;
@@ -46,6 +59,8 @@ export declare class UsersService {
         email: string;
         password: string;
         role?: string;
+        artisticName?: string;
+        genre?: string;
     }): Promise<UserResponse>;
     updateProfile(userId: string, data: Partial<{
         name: string;

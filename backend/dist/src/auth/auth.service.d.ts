@@ -12,6 +12,9 @@ export declare class AuthService {
         name: string;
         email: string;
         password: string;
+        accountType?: 'USER' | 'ARTIST';
+        artisticName?: string;
+        genre?: string;
     }): Promise<{
         message: string;
         access_token: string;
@@ -27,8 +30,12 @@ export declare class AuthService {
     }>;
     getProfile(userId: string): Promise<import("../users/users.service").UserResponse>;
     private generateToken;
-    forgotPassword(email: string): Promise<{
+    forgotPassword(email: string, ipAddress?: string): Promise<{
         message: string;
+        email?: undefined;
+    } | {
+        message: string;
+        email: string;
     }>;
     verifyResetCode(email: string, code: string): Promise<{
         message: string;

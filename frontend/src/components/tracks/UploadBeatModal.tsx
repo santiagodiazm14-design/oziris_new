@@ -16,7 +16,7 @@ interface UploadBeatModalProps {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBeatModalProps) {
-  const { user } = useAuth();
+  const { user, isArtist } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [genre, setGenre] = useState('Trap');
@@ -65,7 +65,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
     }
   }, [coverFile]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !isArtist) return null;
 
   const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setErrorMessage(null);

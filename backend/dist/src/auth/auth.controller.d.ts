@@ -6,6 +6,9 @@ export declare class AuthController {
         name: string;
         email: string;
         password: string;
+        accountType?: 'USER' | 'ARTIST';
+        artisticName?: string;
+        genre?: string;
     }): Promise<{
         message: string;
         access_token: string;
@@ -20,8 +23,12 @@ export declare class AuthController {
         user: import("../users/users.service").UserResponse;
     }>;
     getProfile(req: any): Promise<import("../users/users.service").UserResponse>;
-    forgotPassword(email: string): Promise<{
+    forgotPassword(email: string, req: any): Promise<{
         message: string;
+        email?: undefined;
+    } | {
+        message: string;
+        email: string;
     }>;
     verifyResetCode(email: string, code: string): Promise<{
         message: string;

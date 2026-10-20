@@ -250,6 +250,21 @@ let TracksService = class TracksService {
     }
     async create(data) {
         const producerId = data.producerId || 'user-admin-1';
+        if (producerId && producerId !== 'user-admin-1') {
+            try {
+                const u = await this.prisma.user.findUnique({
+                    where: { id: producerId },
+                    include: { artist: true },
+                });
+                if (u && u.role === 'USER' && !u.artist) {
+                    throw new common_1.ForbiddenException('Acceso denegado: Solo los usuarios con perfil de artista o productores pueden subir beats.');
+                }
+            }
+            catch (e) {
+                if (e instanceof common_1.ForbiddenException)
+                    throw e;
+            }
+        }
         let producerAvatarUrl = null;
         try {
             const p = await this.prisma.user.findUnique({ where: { id: producerId } });

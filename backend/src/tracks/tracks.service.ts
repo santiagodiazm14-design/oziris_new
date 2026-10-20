@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface Track {
@@ -280,6 +280,23 @@ export class TracksService {
   async create(data: Partial<Track> & { producerId?: string }): Promise<Track> {
     const producerId = data.producerId || 'user-admin-1';
     
+    // Verify that the user has an artist profile or producer/admin role
+    if (producerId && producerId !== 'user-admin-1') {
+      try {
+        const u = await this.prisma.user.findUnique({
+          where: { id: producerId },
+          include: { artist: true },
+        });
+        if (u && u.role === 'USER' && !u.artist) {
+          throw new ForbiddenException(
+            'Acceso denegado: Solo los usuarios con perfil de artista o productores pueden subir beats.',
+          );
+        }
+      } catch (e: any) {
+        if (e instanceof ForbiddenException) throw e;
+      }
+    }
+
     // Fetch producer from DB to get avatar if cover not provided
     let producerAvatarUrl: string | null = null;
     try {

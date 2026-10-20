@@ -1,3 +1,16 @@
+export interface Artist {
+  id: string;
+  artisticName: string;
+  bio?: string | null;
+  genre?: string | null;
+  bannerUrl?: string | null;
+  spotifyUrl?: string | null;
+  instagramUrl?: string | null;
+  youtubeUrl?: string | null;
+  verified: boolean;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -9,6 +22,7 @@ export interface User {
   role: 'ADMIN' | 'USER' | 'PRODUCER' | 'BUYER' | string;
   bio?: string | null;
   isActive?: boolean;
+  artist?: Artist | null;
   createdAt?: string;
   updatedAt?: string;
 }

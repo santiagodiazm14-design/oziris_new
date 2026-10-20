@@ -11,6 +11,7 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isArtist: boolean;
   isLoading: boolean;
   login: (token: string, user: User) => void;
   register: (token: string, user: User) => void;
@@ -75,6 +76,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isAuthenticated = !!token && !!user;
   const isAdmin = isAuthenticated && user?.role === 'ADMIN';
+  const isArtist =
+    isAuthenticated &&
+    (user?.role === 'PRODUCER' || user?.role === 'ADMIN' || !!user?.artist);
 
   return (
     <AuthContext.Provider
@@ -83,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         isAuthenticated,
         isAdmin,
+        isArtist,
         isLoading,
         login,
         register,

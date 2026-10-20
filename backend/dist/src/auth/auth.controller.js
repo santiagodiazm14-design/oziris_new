@@ -30,8 +30,9 @@ let AuthController = class AuthController {
     async getProfile(req) {
         return this.authService.getProfile(req.user.id);
     }
-    async forgotPassword(email) {
-        return this.authService.forgotPassword(email);
+    async forgotPassword(email, req) {
+        const ip = req?.ip || req?.headers?.['x-forwarded-for'] || null;
+        return this.authService.forgotPassword(email, ip);
     }
     async verifyResetCode(email, code) {
         return this.authService.verifyResetCode(email, code);
@@ -68,8 +69,9 @@ __decorate([
     (0, common_1.Post)('forgot-password'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)('email')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "forgotPassword", null);
 __decorate([

@@ -2,6 +2,19 @@ import { Injectable, NotFoundException, BadRequestException, ConflictException }
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 
+export interface ArtistResponse {
+  id: string;
+  artisticName: string;
+  bio?: string | null;
+  genre?: string | null;
+  bannerUrl?: string | null;
+  spotifyUrl?: string | null;
+  instagramUrl?: string | null;
+  youtubeUrl?: string | null;
+  verified: boolean;
+  createdAt: string;
+}
+
 export interface UserResponse {
   id: string;
   email: string;
@@ -17,6 +30,7 @@ export interface UserResponse {
   updatedAt: string;
   resetPasswordCode?: string | null;
   resetPasswordExpires?: string | Date | null;
+  artist?: ArtistResponse | null;
 }
 
 const defaultUserHash = bcrypt.hashSync('Oziris123!', 10);
@@ -104,6 +118,7 @@ export class UsersService {
               ],
             }
           : undefined,
+        include: { artist: true },
         orderBy: { createdAt: 'desc' },
       });
       if (dbUsers && dbUsers.length > 0) {
@@ -128,7 +143,10 @@ export class UsersService {
 
   async findById(id: string): Promise<UserResponse> {
     try {
-      const user = await this.prisma.user.findUnique({ where: { id } });
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+        include: { artist: true },
+      });
       if (user) return this.sanitizeUser(user);
     } catch (e) {
       // Fallback
@@ -152,20 +170,30 @@ export class UsersService {
     return this.inMemoryUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
   }
 
-  async createUser(data: { name: string; email: string; password: string; role?: string }) {
+  async createUser(data: {
+    name: string;
+    email: string;
+    password: string;
+    role?: string;
+    artisticName?: string;
+    genre?: string;
+  }) {
     const existing = await this.findByEmailWithPassword(data.email);
     if (existing) {
       throw new ConflictException('El correo electrónico ya se encuentra registrado.');
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    const assignedRole = data.role === 'ADMIN' ? 'ADMIN' : 'USER';
+    const assignedRole = data.role === 'ADMIN' ? 'ADMIN' : data.role === 'PRODUCER' ? 'PRODUCER' : 'USER';
+    const isArtist = assignedRole === 'PRODUCER';
+    const finalArtistName = isArtist ? (data.artisticName?.trim() || data.name.trim()) : null;
 
     const newUser = {
       id: `user-${Date.now()}`,
       name: data.name,
       email: data.email,
       password: hashedPassword,
+      artistName: finalArtistName,
       role: assignedRole as any,
       isActive: true,
       createdAt: new Date(),
@@ -174,7 +202,21 @@ export class UsersService {
 
     try {
       const dbUser = await this.prisma.user.create({
-        data: newUser,
+        data: {
+          ...newUser,
+          artist: isArtist
+            ? {
+                create: {
+                  artisticName: finalArtistName || data.name.trim(),
+                  genre: data.genre?.trim() || null,
+                  verified: false,
+                },
+              }
+            : undefined,
+        },
+        include: {
+          artist: true,
+        },
       });
       return this.sanitizeUser(dbUser);
     } catch (e) {
@@ -390,12 +432,29 @@ export class UsersService {
       email: user.email,
       name: user.name,
       lastName: user.lastName || null,
-      artistName: user.artistName || null,
+      artistName: user.artistName || (user.artist ? user.artist.artisticName : null),
       location: user.location || null,
       avatarUrl: user.avatarUrl || null,
-      bio: user.bio || null,
+      bio: user.bio || (user.artist ? user.artist.bio : null),
       role: user.role,
       isActive: user.isActive ?? true,
+      artist: user.artist
+        ? {
+            id: user.artist.id,
+            artisticName: user.artist.artisticName,
+            bio: user.artist.bio || null,
+            genre: user.artist.genre || null,
+            bannerUrl: user.artist.bannerUrl || null,
+            spotifyUrl: user.artist.spotifyUrl || null,
+            instagramUrl: user.artist.instagramUrl || null,
+            youtubeUrl: user.artist.youtubeUrl || null,
+            verified: user.artist.verified ?? false,
+            createdAt:
+              user.artist.createdAt instanceof Date
+                ? user.artist.createdAt.toISOString()
+                : user.artist.createdAt || new Date().toISOString(),
+          }
+        : null,
       createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt || new Date().toISOString(),
       updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : user.updatedAt || new Date().toISOString(),
     };

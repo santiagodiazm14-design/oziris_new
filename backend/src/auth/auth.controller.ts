@@ -16,7 +16,17 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() body: { name: string; email: string; password: string }) {
+  async register(
+    @Body()
+    body: {
+      name: string;
+      email: string;
+      password: string;
+      accountType?: 'USER' | 'ARTIST';
+      artisticName?: string;
+      genre?: string;
+    },
+  ) {
     return this.authService.register(body);
   }
 
@@ -34,8 +44,9 @@ export class AuthController {
 
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
-  async forgotPassword(@Body('email') email: string) {
-    return this.authService.forgotPassword(email);
+  async forgotPassword(@Body('email') email: string, @Request() req: any) {
+    const ip = req?.ip || req?.headers?.['x-forwarded-for'] || null;
+    return this.authService.forgotPassword(email, ip);
   }
 
   @Post('verify-reset-code')

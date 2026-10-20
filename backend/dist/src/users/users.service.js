@@ -129,6 +129,7 @@ let UsersService = class UsersService {
                         ],
                     }
                     : undefined,
+                include: { artist: true },
                 orderBy: { createdAt: 'desc' },
             });
             if (dbUsers && dbUsers.length > 0) {
@@ -148,7 +149,10 @@ let UsersService = class UsersService {
     }
     async findById(id) {
         try {
-            const user = await this.prisma.user.findUnique({ where: { id } });
+            const user = await this.prisma.user.findUnique({
+                where: { id },
+                include: { artist: true },
+            });
             if (user)
                 return this.sanitizeUser(user);
         }
@@ -176,12 +180,15 @@ let UsersService = class UsersService {
             throw new common_1.ConflictException('El correo electrónico ya se encuentra registrado.');
         }
         const hashedPassword = await bcrypt.hash(data.password, 10);
-        const assignedRole = data.role === 'ADMIN' ? 'ADMIN' : 'USER';
+        const assignedRole = data.role === 'ADMIN' ? 'ADMIN' : data.role === 'PRODUCER' ? 'PRODUCER' : 'USER';
+        const isArtist = assignedRole === 'PRODUCER';
+        const finalArtistName = isArtist ? (data.artisticName?.trim() || data.name.trim()) : null;
         const newUser = {
             id: `user-${Date.now()}`,
             name: data.name,
             email: data.email,
             password: hashedPassword,
+            artistName: finalArtistName,
             role: assignedRole,
             isActive: true,
             createdAt: new Date(),
@@ -189,7 +196,21 @@ let UsersService = class UsersService {
         };
         try {
             const dbUser = await this.prisma.user.create({
-                data: newUser,
+                data: {
+                    ...newUser,
+                    artist: isArtist
+                        ? {
+                            create: {
+                                artisticName: finalArtistName || data.name.trim(),
+                                genre: data.genre?.trim() || null,
+                                verified: false,
+                            },
+                        }
+                        : undefined,
+                },
+                include: {
+                    artist: true,
+                },
             });
             return this.sanitizeUser(dbUser);
         }
@@ -368,12 +389,28 @@ let UsersService = class UsersService {
             email: user.email,
             name: user.name,
             lastName: user.lastName || null,
-            artistName: user.artistName || null,
+            artistName: user.artistName || (user.artist ? user.artist.artisticName : null),
             location: user.location || null,
             avatarUrl: user.avatarUrl || null,
-            bio: user.bio || null,
+            bio: user.bio || (user.artist ? user.artist.bio : null),
             role: user.role,
             isActive: user.isActive ?? true,
+            artist: user.artist
+                ? {
+                    id: user.artist.id,
+                    artisticName: user.artist.artisticName,
+                    bio: user.artist.bio || null,
+                    genre: user.artist.genre || null,
+                    bannerUrl: user.artist.bannerUrl || null,
+                    spotifyUrl: user.artist.spotifyUrl || null,
+                    instagramUrl: user.artist.instagramUrl || null,
+                    youtubeUrl: user.artist.youtubeUrl || null,
+                    verified: user.artist.verified ?? false,
+                    createdAt: user.artist.createdAt instanceof Date
+                        ? user.artist.createdAt.toISOString()
+                        : user.artist.createdAt || new Date().toISOString(),
+                }
+                : null,
             createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt || new Date().toISOString(),
             updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : user.updatedAt || new Date().toISOString(),
         };

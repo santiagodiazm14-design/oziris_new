@@ -1,11 +1,29 @@
 import { API_URL } from './config';
 import { User } from '@/types';
 
-export async function registerApi(name: string, email: string, password: string) {
+export interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+  accountType?: 'USER' | 'ARTIST';
+  artisticName?: string;
+  genre?: string;
+}
+
+export async function registerApi(
+  dataOrName: string | RegisterData,
+  email?: string,
+  password?: string,
+) {
+  const payload =
+    typeof dataOrName === 'string'
+      ? { name: dataOrName, email, password, accountType: 'USER' }
+      : dataOrName;
+
   const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify(payload),
   });
 
   const data = await res.json();
@@ -41,3 +59,50 @@ export async function getProfileApi(token: string): Promise<User> {
   }
   return data;
 }
+
+export async function forgotPasswordApi(email: string): Promise<{ message: string; email?: string }> {
+  const res = await fetch(`${API_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error al solicitar el código de recuperación.');
+  }
+  return data;
+}
+
+export async function verifyResetCodeApi(email: string, code: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/auth/verify-reset-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Código incorrecto o expirado.');
+  }
+  return data;
+}
+
+export async function resetPasswordApi(
+  email: string,
+  code: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code, newPassword }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error al restablecer la contraseña.');
+  }
+  return data;
+}
+
