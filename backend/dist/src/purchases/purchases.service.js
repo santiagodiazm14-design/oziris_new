@@ -15,24 +15,8 @@ const prisma_service_1 = require("../prisma/prisma.service");
 const tracks_service_1 = require("../tracks/tracks.service");
 const path_1 = require("path");
 const fs_1 = require("fs");
-class SimulatedPurchaseDto {
-    trackId;
-    trackIds;
-    paymentMethod;
-    licenseType;
-    amount;
-    payerName;
-    payerEmail;
-    payerPhone;
-    payerDocument;
-    bankName;
-    personType;
-    cardHolder;
-    cardLastFour;
-    phoneNumber;
-    metadata;
-}
-exports.SimulatedPurchaseDto = SimulatedPurchaseDto;
+const dto_1 = require("./dto");
+Object.defineProperty(exports, "SimulatedPurchaseDto", { enumerable: true, get: function () { return dto_1.SimulatedPurchaseDto; } });
 let PurchasesService = class PurchasesService {
     prisma;
     tracksService;

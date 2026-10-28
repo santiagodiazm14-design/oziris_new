@@ -1,23 +1,8 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { TracksService } from '../tracks/tracks.service';
 import { Response } from 'express';
-export declare class SimulatedPurchaseDto {
-    trackId?: string;
-    trackIds?: string[];
-    paymentMethod?: string;
-    licenseType?: string;
-    amount?: number;
-    payerName?: string;
-    payerEmail?: string;
-    payerPhone?: string;
-    payerDocument?: string;
-    bankName?: string;
-    personType?: string;
-    cardHolder?: string;
-    cardLastFour?: string;
-    phoneNumber?: string;
-    metadata?: any;
-}
+import { SimulatedPurchaseDto } from './dto';
+export { SimulatedPurchaseDto };
 export declare class PurchasesService {
     private readonly prisma;
     private readonly tracksService;

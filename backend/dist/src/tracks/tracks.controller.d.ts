@@ -1,4 +1,5 @@
-import { TracksService, Track } from './tracks.service';
+import { TracksService } from './tracks.service';
+import { Track } from './dto';
 export declare class TracksController {
     private readonly tracksService;
     constructor(tracksService: TracksService);

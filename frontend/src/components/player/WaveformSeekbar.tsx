@@ -101,7 +101,7 @@ export const WaveformSeekbar: React.FC<WaveformSeekbarProps> = ({
   return (
     <div className="w-full flex items-center gap-3 select-none px-2 py-1">
       {/* Current Time */}
-      <span className="text-[11px] font-mono font-semibold text-purple-300 w-10 text-right shrink-0">
+      <span className="text-[11px] font-mono font-semibold text-emerald-400 w-10 text-right shrink-0">
         {formatTime(currentTime)}
       </span>
 
@@ -125,9 +125,9 @@ export const WaveformSeekbar: React.FC<WaveformSeekbarProps> = ({
               style={{ height: `${Math.round(heightRatio * 100)}%` }}
               className={`w-[2px] sm:w-[3px] rounded-full transition-all duration-75 ${
                 isPlayed
-                  ? "bg-gradient-to-t from-purple-600 via-violet-400 to-cyan-300 shadow-[0_0_10px_rgba(168,85,247,0.5)]"
+                  ? "bg-gradient-to-t from-emerald-600 via-teal-400 to-emerald-200 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
                   : isHovered
-                  ? "bg-cyan-400/80 shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+                  ? "bg-teal-300/80 shadow-[0_0_8px_rgba(45,212,191,0.4)]"
                   : "bg-zinc-800/90 group-hover:bg-zinc-700/80"
               }`}
             />
@@ -138,7 +138,7 @@ export const WaveformSeekbar: React.FC<WaveformSeekbarProps> = ({
         {hoverPosition !== null && duration > 0 && (
           <div
             style={{ left: `${hoverPosition}%` }}
-            className="absolute -top-7 -translate-x-1/2 bg-[#0e0e14] border border-purple-500/40 text-cyan-300 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-lg shadow-[0_0_12px_rgba(147,51,234,0.3)] pointer-events-none z-10 backdrop-blur-md"
+            className="absolute -top-7 -translate-x-1/2 bg-[#090d10] border border-emerald-500/35 text-emerald-300 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-lg shadow-lg pointer-events-none z-10 backdrop-blur-md"
           >
             {formatTime((hoverPosition / 100) * duration)}
           </div>

@@ -16,6 +16,7 @@ exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
 const jwt_auth_guard_1 = require("./jwt-auth.guard");
+const dto_1 = require("./dto");
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
@@ -30,15 +31,15 @@ let AuthController = class AuthController {
     async getProfile(req) {
         return this.authService.getProfile(req.user.id);
     }
-    async forgotPassword(email, req) {
+    async forgotPassword(body, req) {
         const ip = req?.ip || req?.headers?.['x-forwarded-for'] || null;
-        return this.authService.forgotPassword(email, ip);
+        return this.authService.forgotPassword(body.email, ip);
     }
-    async verifyResetCode(email, code) {
-        return this.authService.verifyResetCode(email, code);
+    async verifyResetCode(body) {
+        return this.authService.verifyResetCode(body.email, body.code);
     }
-    async resetPassword(email, code, newPassword) {
-        return this.authService.resetPassword(email, code, newPassword);
+    async resetPassword(body) {
+        return this.authService.resetPassword(body.email, body.code, body.newPassword);
     }
 };
 exports.AuthController = AuthController;
@@ -46,7 +47,7 @@ __decorate([
     (0, common_1.Post)('register'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [dto_1.RegisterDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
@@ -54,7 +55,7 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [dto_1.LoginDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
@@ -68,29 +69,26 @@ __decorate([
 __decorate([
     (0, common_1.Post)('forgot-password'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    __param(0, (0, common_1.Body)('email')),
+    __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [dto_1.ForgotPasswordDto, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "forgotPassword", null);
 __decorate([
     (0, common_1.Post)('verify-reset-code'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    __param(0, (0, common_1.Body)('email')),
-    __param(1, (0, common_1.Body)('code')),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [dto_1.VerifyResetCodeDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "verifyResetCode", null);
 __decorate([
     (0, common_1.Post)('reset-password'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    __param(0, (0, common_1.Body)('email')),
-    __param(1, (0, common_1.Body)('code')),
-    __param(2, (0, common_1.Body)('newPassword')),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [dto_1.ResetPasswordDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = __decorate([

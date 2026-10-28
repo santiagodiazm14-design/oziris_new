@@ -1,4 +1,5 @@
-import { PurchasesService, SimulatedPurchaseDto } from './purchases.service';
+import { PurchasesService } from './purchases.service';
+import { SimulatedPurchaseDto } from './dto';
 export declare class PurchasesController {
     private readonly purchasesService;
     constructor(purchasesService: PurchasesService);

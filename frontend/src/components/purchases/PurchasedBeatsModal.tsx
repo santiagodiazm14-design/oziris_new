@@ -172,7 +172,7 @@ export default function PurchasedBeatsModal({
         <div className="space-y-3">
           {isLoading ? (
             <div className="py-16 flex flex-col items-center justify-center gap-2.5 text-zinc-500">
-              <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+              <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
               <span className="text-xs">Cargando tus licencias registradas...</span>
             </div>
           ) : purchases.length === 0 ? (

@@ -8,7 +8,8 @@ import {
   Request,
   Response,
 } from '@nestjs/common';
-import { PurchasesService, SimulatedPurchaseDto } from './purchases.service';
+import { PurchasesService } from './purchases.service';
+import { SimulatedPurchaseDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('purchases')

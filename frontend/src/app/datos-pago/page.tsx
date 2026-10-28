@@ -138,10 +138,10 @@ function DatosPagoContent() {
 
   const getIcon = () => {
     if (metodo === "Tarjeta") {
-      return <CreditCard className="w-6 h-6 text-purple-400" />;
+      return <CreditCard className="w-6 h-6 text-emerald-400" />;
     }
 
-    return <Building2 className="w-6 h-6 text-blue-400" />;
+    return <Building2 className="w-6 h-6 text-teal-400" />;
   };
 
   const getDescription = () => {
@@ -153,15 +153,15 @@ function DatosPagoContent() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white font-sans">
+    <main className="min-h-screen bg-[#090d10] text-white font-sans">
 
       {/* HEADER */}
-      <header className="border-b border-white/5 bg-[#0a0a0a]/95 backdrop-blur-md">
+      <header className="border-b border-emerald-500/10 bg-[#090d10]/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
 
           <Link
             href={`/checkout?beat=${beatId}`}
-            className="flex items-center gap-2 text-zinc-400 hover:text-white transition"
+            className="flex items-center gap-2 text-zinc-400 hover:text-emerald-300 transition"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Volver al pago</span>
@@ -169,10 +169,10 @@ function DatosPagoContent() {
 
           <div className="flex items-center gap-2">
 
-            <ShoppingBag className="w-5 h-5 text-purple-400" />
+            <ShoppingBag className="w-5 h-5 text-emerald-400" />
 
             <span className="text-xl font-bold tracking-[0.25em]">
-              O<span className="text-purple-500">Z</span>IRIS
+              O<span className="text-emerald-400">Z</span>IRIS
             </span>
 
           </div>
@@ -186,9 +186,9 @@ function DatosPagoContent() {
         {/* TITULO */}
         <div className="text-center mb-10">
 
-          <span className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 text-purple-400 px-4 py-2 rounded-full text-sm font-medium mb-5">
+          <span className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-medium mb-5">
 
-            <ShieldCheck className="w-4 h-4" />
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
 
             Información de compra
 
@@ -205,21 +205,21 @@ function DatosPagoContent() {
         </div>
 
         {/* METODO */}
-        <div className="bg-[#121216] border border-purple-500/20 rounded-2xl p-5 mb-6">
+        <div className="bg-[#0f151c] border border-emerald-500/20 rounded-2xl p-5 mb-6">
 
           <div className="flex items-center gap-4">
 
-            <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
               {getIcon()}
             </div>
 
             <div>
 
-              <p className="text-xs text-zinc-500 uppercase tracking-wider">
+              <p className="text-xs text-zinc-400 uppercase tracking-wider">
                 Método de pago seleccionado
               </p>
 
-              <h2 className="text-xl font-bold text-purple-400">
+              <h2 className="text-xl font-bold text-emerald-400">
                 {metodo}
               </h2>
 
@@ -232,7 +232,7 @@ function DatosPagoContent() {
         {/* FORMULARIO */}
         <form
           onSubmit={enviarFormulario}
-          className="bg-[#121216] border border-white/10 rounded-2xl p-6 md:p-8"
+          className="bg-[#0f151c] border border-emerald-500/10 rounded-2xl p-6 md:p-8"
         >
 
           <h2 className="text-2xl font-bold mb-2">
@@ -265,7 +265,7 @@ function DatosPagoContent() {
                     actualizarCampo("nombre", e.target.value)
                   }
                   placeholder="Ej. Juan Pérez"
-                  className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder:text-zinc-600 outline-none focus:border-purple-500 transition"
+                  className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
                 />
 
               </div>
@@ -287,7 +287,7 @@ function DatosPagoContent() {
                   actualizarCampo("documento", e.target.value)
                 }
                 placeholder="Número de documento"
-                className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-zinc-600 outline-none focus:border-purple-500 transition"
+                className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
               />
 
             </div>
@@ -311,7 +311,7 @@ function DatosPagoContent() {
                     actualizarCampo("correo", e.target.value)
                   }
                   placeholder="correo@ejemplo.com"
-                  className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder:text-zinc-600 outline-none focus:border-purple-500 transition"
+                  className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
                 />
 
               </div>
@@ -337,7 +337,7 @@ function DatosPagoContent() {
                     actualizarCampo("telefono", e.target.value)
                   }
                   placeholder="300 000 0000"
-                  className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder:text-zinc-600 outline-none focus:border-purple-500 transition"
+                  className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
                 />
 
               </div>
@@ -373,7 +373,7 @@ function DatosPagoContent() {
                     onChange={(e) =>
                       actualizarCampo("banco", e.target.value)
                     }
-                    className="w-full bg-[#18181d] border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:border-purple-500 transition"
+                    className="w-full bg-[#10171e] border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
                   >
 
                     <option value="">
@@ -426,7 +426,7 @@ function DatosPagoContent() {
                         e.target.value
                       )
                     }
-                    className="w-full bg-[#18181d] border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:border-purple-500 transition"
+                    className="w-full bg-[#10171e] border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
                   >
 
                     <option value="Persona natural">
@@ -465,7 +465,7 @@ function DatosPagoContent() {
                       )
                     }
                     placeholder="Nombre como aparece en la tarjeta"
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-zinc-600 outline-none focus:border-purple-500 transition"
+                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
                   />
 
                 </div>
@@ -493,7 +493,7 @@ function DatosPagoContent() {
                         )
                       }
                       placeholder="0000 0000 0000 0000"
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder:text-zinc-600 outline-none focus:border-purple-500 transition"
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
                     />
 
                   </div>
@@ -520,7 +520,7 @@ function DatosPagoContent() {
                         )
                       }
                       placeholder="MM/AA"
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-zinc-600 outline-none focus:border-purple-500 transition"
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
                     />
 
                   </div>
@@ -544,7 +544,7 @@ function DatosPagoContent() {
                         )
                       }
                       placeholder="•••"
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-zinc-600 outline-none focus:border-purple-500 transition"
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
                     />
 
                   </div>
@@ -580,7 +580,7 @@ function DatosPagoContent() {
               className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold shadow-lg transition transform ${
                 isProcessing || !!transactionData
                   ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                  : "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-purple-500/20 hover:scale-[1.01]"
+                  : "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold shadow-emerald-500/20 hover:scale-[1.01]"
               }`}
             >
               {isProcessing ? (
@@ -607,7 +607,7 @@ function DatosPagoContent() {
 
         {/* TRANSACCIÓN EXITOSA Y DESCARGA DIRECTA */}
         {transactionData && (
-          <div className="mt-8 p-6 rounded-3xl bg-[#13131c] border border-emerald-500/40 shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="mt-8 p-6 rounded-3xl bg-[#0f151c] border border-emerald-500/40 shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
@@ -628,7 +628,7 @@ function DatosPagoContent() {
               </span>
             </div>
 
-            <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/[0.03] border border-purple-500/20 rounded-2xl p-4">
+            <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/[0.03] border border-emerald-500/20 rounded-2xl p-4">
               <div>
                 <h4 className="font-bold text-white text-sm">
                   {track?.title || "Beat OZIRIS HQ"}
@@ -642,7 +642,7 @@ function DatosPagoContent() {
                 type="button"
                 onClick={handleDownload}
                 disabled={isDownloading}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition transform hover:scale-105 active:scale-95"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/20 transition transform hover:scale-105 active:scale-95"
               >
                 {isDownloading ? (
                   <>
@@ -659,7 +659,7 @@ function DatosPagoContent() {
             </div>
 
             <div className="mt-5 flex items-center justify-between pt-3 border-t border-white/5 text-xs text-zinc-400">
-              <Link href="/inicio" className="text-purple-400 hover:underline">
+              <Link href="/inicio" className="text-emerald-400 hover:text-emerald-300 hover:underline">
                 ← Volver al catálogo de Beats
               </Link>
               <span>El beat también está guardado en tu perfil.</span>
@@ -677,7 +677,7 @@ export default function DatosPagoPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+        <main className="min-h-screen bg-[#090d10] text-white flex items-center justify-center">
           <p className="text-zinc-400">Cargando...</p>
         </main>
       }

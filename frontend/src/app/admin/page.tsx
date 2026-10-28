@@ -48,20 +48,20 @@ function AdminDashboardContent() {
   } = useAdminDashboard(token);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans">
+    <div className="min-h-screen bg-[#090d10] text-white flex flex-col font-sans">
       <ToastNotification notification={notification} />
 
       <AdminHeader currentUser={currentUser} onLogout={logout} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 flex flex-col gap-8">
         {/* TABS NAVIGATION */}
-        <div className="flex items-center gap-3 border-b border-white/10 pb-4 overflow-x-auto">
+        <div className="flex items-center gap-3 border-b border-emerald-500/10 pb-4 overflow-x-auto">
           <button
             onClick={() => setActiveTab('dashboard')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition ${
               activeTab === 'dashboard'
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25'
-                : 'bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 border border-white/5'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold shadow-lg shadow-emerald-500/20'
+                : 'bg-[#0f151c] text-zinc-400 hover:text-white hover:bg-emerald-500/10 border border-white/5'
             }`}
           >
             <Shield className="w-4 h-4" />
@@ -72,13 +72,15 @@ function AdminDashboardContent() {
             onClick={() => setActiveTab('users')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition ${
               activeTab === 'users'
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25'
-                : 'bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 border border-white/5'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold shadow-lg shadow-emerald-500/20'
+                : 'bg-[#0f151c] text-zinc-400 hover:text-white hover:bg-emerald-500/10 border border-white/5'
             }`}
           >
             <Users className="w-4 h-4" />
             <span>Gestión de Usuarios</span>
-            <span className="ml-1 bg-white/20 text-white text-[11px] px-2 py-0.5 rounded-full">
+            <span className={`ml-1 text-[11px] px-2 py-0.5 rounded-full ${
+              activeTab === 'users' ? 'bg-slate-950/25 text-slate-950 font-bold' : 'bg-emerald-500/15 text-emerald-300'
+            }`}>
               {users.length}
             </span>
           </button>
@@ -87,8 +89,8 @@ function AdminDashboardContent() {
             onClick={() => setActiveTab('content')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition ${
               activeTab === 'content'
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25'
-                : 'bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 border border-white/5'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold shadow-lg shadow-emerald-500/20'
+                : 'bg-[#0f151c] text-zinc-400 hover:text-white hover:bg-emerald-500/10 border border-white/5'
             }`}
           >
             <Music className="w-4 h-4" />

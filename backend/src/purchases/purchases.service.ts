@@ -9,24 +9,9 @@ import { TracksService } from '../tracks/tracks.service';
 import { join } from 'path';
 import { existsSync, createReadStream } from 'fs';
 import { Response } from 'express';
+import { SimulatedPurchaseDto } from './dto';
 
-export class SimulatedPurchaseDto {
-  trackId?: string;
-  trackIds?: string[];
-  paymentMethod?: string;
-  licenseType?: string;
-  amount?: number;
-  payerName?: string;
-  payerEmail?: string;
-  payerPhone?: string;
-  payerDocument?: string;
-  bankName?: string;
-  personType?: string;
-  cardHolder?: string;
-  cardLastFour?: string;
-  phoneNumber?: string;
-  metadata?: any;
-}
+export { SimulatedPurchaseDto };
 
 @Injectable()
 export class PurchasesService {

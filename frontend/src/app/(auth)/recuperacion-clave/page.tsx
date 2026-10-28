@@ -120,7 +120,7 @@ export default function ForgotPasswordPage() {
           {step === 1 && 'Ingresa tu correo para recibir un código de recuperación de 6 dígitos.'}
           {step === 2 && (
             <span>
-              Ingresa el código enviado a <strong className="text-purple-300">{email}</strong>.
+              Ingresa el código enviado a <strong className="text-emerald-300">{email}</strong>.
             </span>
           )}
           {step === 3 && 'Crea una nueva contraseña segura para tu cuenta de Oziris.'}
@@ -135,7 +135,7 @@ export default function ForgotPasswordPage() {
       )}
 
       {infoMessage && step === 2 && !error && (
-        <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-sm animate-in fade-in">
+        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm animate-in fade-in">
           {infoMessage}
         </div>
       )}
@@ -155,18 +155,18 @@ export default function ForgotPasswordPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@correo.com"
-                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-all"
               />
             </div>
           </div>
           <button
             type="submit"
             disabled={isLoading || !email.trim()}
-            className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-purple-500/25 mt-2 disabled:opacity-50 cursor-pointer"
+            className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 mt-2 disabled:opacity-50 cursor-pointer"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
                 <span>Enviando código...</span>
               </>
             ) : (
@@ -188,7 +188,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="button"
                 onClick={() => { setStep(1); setError(''); }}
-                className="text-xs text-purple-400 hover:text-purple-300 transition-colors cursor-pointer flex items-center gap-1"
+                className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer flex items-center gap-1"
               >
                 <ArrowLeft className="w-3 h-3" /> Cambiar correo
               </button>
@@ -205,7 +205,7 @@ export default function ForgotPasswordPage() {
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
                 placeholder="000000"
-                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all text-center tracking-[0.5em] text-xl font-mono font-bold"
+                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-all text-center tracking-[0.5em] text-xl font-mono font-bold"
               />
             </div>
           </div>
@@ -216,7 +216,7 @@ export default function ForgotPasswordPage() {
               type="button"
               disabled={cooldown > 0 || isLoading}
               onClick={handleResendCode}
-              className="text-purple-400 hover:text-purple-300 disabled:text-zinc-600 transition-colors flex items-center gap-1 cursor-pointer disabled:cursor-not-allowed font-medium"
+              className="text-emerald-400 hover:text-emerald-300 disabled:text-zinc-600 transition-colors flex items-center gap-1 cursor-pointer disabled:cursor-not-allowed font-medium"
             >
               <RotateCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
               {cooldown > 0 ? `Reenviar en ${cooldown}s` : 'Reenviar código'}
@@ -226,11 +226,11 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={isLoading || code.length !== 6}
-            className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-purple-500/25 mt-2 disabled:opacity-50 cursor-pointer"
+            className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 mt-2 disabled:opacity-50 cursor-pointer"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
                 <span>Verificando...</span>
               </>
             ) : (
@@ -259,7 +259,7 @@ export default function ForgotPasswordPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Mínimo 6 caracteres"
-                className="w-full pl-10 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+                className="w-full pl-10 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-all"
               />
               <button
                 type="button"
@@ -284,7 +284,7 @@ export default function ForgotPasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Repite la nueva contraseña"
-                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-all"
               />
             </div>
           </div>
@@ -292,11 +292,11 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={isLoading || newPassword.length < 6 || newPassword !== confirmPassword}
-            className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-purple-500/25 mt-2 disabled:opacity-50 cursor-pointer"
+            className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 mt-2 disabled:opacity-50 cursor-pointer"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
                 <span>Restableciendo contraseña...</span>
               </>
             ) : (
@@ -312,8 +312,8 @@ export default function ForgotPasswordPage() {
       {/* PASO 4: ÉXITO */}
       {step === 4 && (
         <div className="flex flex-col items-center justify-center gap-4 mt-4 py-6 text-center">
-          <div className="w-16 h-16 bg-green-500/20 border border-green-500/30 rounded-2xl flex items-center justify-center shadow-lg shadow-green-500/10">
-            <CheckCircle2 className="w-8 h-8 text-green-400" />
+          <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/30 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/10">
+            <CheckCircle2 className="w-8 h-8 text-emerald-400" />
           </div>
           <div className="space-y-1">
             <h3 className="text-xl font-bold text-white">¡Contraseña restablecida!</h3>
@@ -323,7 +323,7 @@ export default function ForgotPasswordPage() {
           </div>
           <Link
             href="/login"
-            className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-purple-500/25 mt-4"
+            className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 mt-4"
           >
             Iniciar Sesión
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -334,7 +334,7 @@ export default function ForgotPasswordPage() {
       {step < 4 && (
         <div className="mt-4 text-center text-sm text-zinc-400">
           ¿Recordaste tu contraseña?{' '}
-          <Link href="/login" className="text-purple-400 font-medium hover:text-purple-300 transition-colors">
+          <Link href="/login" className="text-emerald-400 font-semibold hover:text-emerald-300 transition-colors">
             Inicia sesión
           </Link>
         </div>

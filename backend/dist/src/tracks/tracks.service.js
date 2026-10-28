@@ -12,103 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TracksService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
-const INITIAL_TRACKS = [
-    {
-        id: 'track-1',
-        title: 'Dark Vibes Trap Beat',
-        description: 'Heavy 808s and dark synth melodies.',
-        price: 29.99,
-        genre: 'Trap',
-        bpm: 140,
-        key: 'C Minor',
-        tags: ['Trap', 'Dark', '808'],
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        fullAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop',
-        producerId: 'prod-1',
-        producer: {
-            id: 'prod-1',
-            name: 'Oziris Producer',
-            email: 'producer@oziris.com',
-            avatarUrl: null,
-            artistName: 'Oziris Producer',
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'track-2',
-        title: 'Summer Reggaeton Hit',
-        description: 'Bouncy dembow rhythm with smooth guitars.',
-        price: 34.99,
-        genre: 'Reggaeton',
-        bpm: 96,
-        key: 'A Minor',
-        tags: ['Reggaeton', 'Latino', 'Verano'],
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-        fullAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-        coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop',
-        producerId: 'prod-1',
-        producer: {
-            id: 'prod-1',
-            name: 'Oziris Producer',
-            email: 'producer@oziris.com',
-            avatarUrl: null,
-            artistName: 'Oziris Producer',
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'track-3',
-        title: 'Midnight R&B Soul',
-        description: 'Lush rhodes and smooth bassline.',
-        price: 39.99,
-        genre: 'R&B',
-        bpm: 85,
-        key: 'F Major',
-        tags: ['R&B', 'Soul', 'Smooth'],
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-        fullAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-        coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop',
-        producerId: 'prod-1',
-        producer: {
-            id: 'prod-1',
-            name: 'Oziris Producer',
-            email: 'producer@oziris.com',
-            avatarUrl: null,
-            artistName: 'Oziris Producer',
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'track-4',
-        title: 'Classic Boom Bap',
-        description: '90s underground hip-hop style with vinyl crackle.',
-        price: 24.99,
-        genre: 'Boom Bap',
-        bpm: 90,
-        key: 'G Minor',
-        tags: ['Boom Bap', '90s', 'Hip Hop'],
-        audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-        fullAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-        coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop',
-        producerId: 'prod-1',
-        producer: {
-            id: 'prod-1',
-            name: 'Oziris Producer',
-            email: 'producer@oziris.com',
-            avatarUrl: null,
-            artistName: 'Oziris Producer',
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-];
+const mock_tracks_data_1 = require("./mock-tracks.data");
 let TracksService = class TracksService {
     prisma;
-    inMemoryTracks = [...INITIAL_TRACKS];
+    inMemoryTracks = [...mock_tracks_data_1.INITIAL_TRACKS];
     constructor(prisma) {
         this.prisma = prisma;
     }

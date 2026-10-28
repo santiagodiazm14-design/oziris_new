@@ -20,7 +20,7 @@ export const AdminTracksTab: React.FC<AdminTracksTabProps> = ({
         <span className="text-xs text-zinc-400 font-mono">{tracks.length} Beats activos</span>
       </div>
 
-      <div className="bg-[#121216] border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-[#0f151c] border border-emerald-500/10 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-white/5 text-zinc-400 text-xs uppercase tracking-wider border-b border-white/10">
@@ -54,7 +54,7 @@ export const AdminTracksTab: React.FC<AdminTracksTabProps> = ({
                           {t.coverUrl ? (
                             <img src={t.coverUrl} alt={t.title} className="w-full h-full object-cover" />
                           ) : (
-                            <Music className="w-5 h-5 text-purple-400" />
+                            <Music className="w-5 h-5 text-emerald-400" />
                           )}
                         </div>
                         <div>
@@ -66,7 +66,7 @@ export const AdminTracksTab: React.FC<AdminTracksTabProps> = ({
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="text-xs font-semibold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
+                      <span className="text-xs font-semibold text-emerald-300 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
                         {t.genre || 'Beat'}
                       </span>
                     </td>

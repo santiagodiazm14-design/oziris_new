@@ -46,73 +46,10 @@ exports.UsersService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const bcrypt = __importStar(require("bcryptjs"));
-const defaultUserHash = bcrypt.hashSync('Oziris123!', 10);
-const defaultAdminHash = bcrypt.hashSync('AdminOziris123!', 10);
-const INITIAL_USERS = [
-    {
-        id: 'user-test-1',
-        name: 'Usuario Prueba 1',
-        lastName: 'Pérez',
-        artistName: 'Producer One',
-        location: 'Medellín, Colombia',
-        avatarUrl: null,
-        email: 'usuario1@oziris.test',
-        password: defaultUserHash,
-        role: 'USER',
-        isActive: true,
-        bio: 'Productor apasionado por el Trap y Reggaeton.',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'user-test-2',
-        name: 'Usuario Prueba 2',
-        lastName: 'Gómez',
-        artistName: 'BeatMaker X',
-        location: 'Bogotá, Colombia',
-        avatarUrl: null,
-        email: 'usuario2@oziris.test',
-        password: defaultUserHash,
-        role: 'USER',
-        isActive: true,
-        bio: 'Creador de sonidos urbanos.',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'user-test-3',
-        name: 'Usuario Prueba 3',
-        lastName: 'Rodríguez',
-        artistName: 'Oziris Producer',
-        location: 'Miami, USA',
-        avatarUrl: null,
-        email: 'usuario3@oziris.test',
-        password: defaultUserHash,
-        role: 'USER',
-        isActive: true,
-        bio: 'Usuario de prueba 3 en la plataforma.',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'user-admin-1',
-        name: 'Administrador Oziris',
-        lastName: 'Admin',
-        artistName: 'Oziris Master',
-        location: 'Central Office',
-        avatarUrl: null,
-        email: 'admin@oziris.test',
-        password: defaultAdminHash,
-        role: 'ADMIN',
-        isActive: true,
-        bio: 'Administrador principal de OZIRIS platform.',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-];
+const mock_users_data_1 = require("./mock-users.data");
 let UsersService = class UsersService {
     prisma;
-    inMemoryUsers = [...INITIAL_USERS];
+    inMemoryUsers = [...mock_users_data_1.INITIAL_USERS];
     inMemoryFavorites = [];
     constructor(prisma) {
         this.prisma = prisma;

@@ -22,7 +22,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#18181b] border border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4">
+      <div className="bg-[#0f151c] border border-emerald-500/15 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4">
         <div className="flex items-center gap-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-lg font-bold text-white">{title}</h3>

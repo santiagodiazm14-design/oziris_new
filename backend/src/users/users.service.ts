@@ -1,103 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
+import { UserResponse, ArtistResponse, CreateUserDto, UpdateUserDto, UpdateProfileDto } from './dto';
+import { INITIAL_USERS } from './mock-users.data';
 
-export interface ArtistResponse {
-  id: string;
-  artisticName: string;
-  bio?: string | null;
-  genre?: string | null;
-  bannerUrl?: string | null;
-  spotifyUrl?: string | null;
-  instagramUrl?: string | null;
-  youtubeUrl?: string | null;
-  verified: boolean;
-  createdAt: string;
-}
-
-export interface UserResponse {
-  id: string;
-  email: string;
-  name: string;
-  lastName?: string | null;
-  artistName?: string | null;
-  location?: string | null;
-  avatarUrl?: string | null;
-  bio?: string | null;
-  role: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  resetPasswordCode?: string | null;
-  resetPasswordExpires?: string | Date | null;
-  artist?: ArtistResponse | null;
-}
-
-const defaultUserHash = bcrypt.hashSync('Oziris123!', 10);
-const defaultAdminHash = bcrypt.hashSync('AdminOziris123!', 10);
-
-const INITIAL_USERS: (UserResponse & { password: string })[] = [
-  {
-    id: 'user-test-1',
-    name: 'Usuario Prueba 1',
-    lastName: 'Pérez',
-    artistName: 'Producer One',
-    location: 'Medellín, Colombia',
-    avatarUrl: null,
-    email: 'usuario1@oziris.test',
-    password: defaultUserHash,
-    role: 'USER',
-    isActive: true,
-    bio: 'Productor apasionado por el Trap y Reggaeton.',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'user-test-2',
-    name: 'Usuario Prueba 2',
-    lastName: 'Gómez',
-    artistName: 'BeatMaker X',
-    location: 'Bogotá, Colombia',
-    avatarUrl: null,
-    email: 'usuario2@oziris.test',
-    password: defaultUserHash,
-    role: 'USER',
-    isActive: true,
-    bio: 'Creador de sonidos urbanos.',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'user-test-3',
-    name: 'Usuario Prueba 3',
-    lastName: 'Rodríguez',
-    artistName: 'Oziris Producer',
-    location: 'Miami, USA',
-    avatarUrl: null,
-    email: 'usuario3@oziris.test',
-    password: defaultUserHash,
-    role: 'USER',
-    isActive: true,
-    bio: 'Usuario de prueba 3 en la plataforma.',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'user-admin-1',
-    name: 'Administrador Oziris',
-    lastName: 'Admin',
-    artistName: 'Oziris Master',
-    location: 'Central Office',
-    avatarUrl: null,
-    email: 'admin@oziris.test',
-    password: defaultAdminHash,
-    role: 'ADMIN',
-    isActive: true,
-    bio: 'Administrador principal de OZIRIS platform.',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+export type { UserResponse, ArtistResponse };
 
 @Injectable()
 export class UsersService {

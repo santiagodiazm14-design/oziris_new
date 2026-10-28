@@ -194,13 +194,13 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-[#121216] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-2xl bg-[#090d10] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/[0.02]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center">
-              <Music className="w-4 h-4 text-purple-400" />
+            <div className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+              <Music className="w-4 h-4 text-emerald-400" />
             </div>
             <h3 className="text-xl font-bold text-white tracking-tight">Subir Nuevo Beat</h3>
           </div>
@@ -250,14 +250,14 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
               {!audioFile ? (
                 <div
                   onClick={() => audioInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/15 rounded-xl bg-white/[0.02] hover:bg-purple-500/5 hover:border-purple-500/40 transition cursor-pointer group text-center"
+                  className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/15 rounded-xl bg-white/[0.02] hover:bg-emerald-500/5 hover:border-emerald-500/40 transition cursor-pointer group text-center"
                 >
-                  <UploadCloud className="w-8 h-8 text-zinc-400 group-hover:text-purple-400 transition mb-2" />
-                  <span className="font-medium text-white group-hover:text-purple-300">Haz clic para subir Audio</span>
+                  <UploadCloud className="w-8 h-8 text-zinc-400 group-hover:text-emerald-400 transition mb-2" />
+                  <span className="font-medium text-white group-hover:text-emerald-300">Haz clic para subir Audio</span>
                   <span className="text-xs text-zinc-500 mt-1">MP3 o WAV (máx 50MB)</span>
                 </div>
               ) : (
-                <div className="p-4 border border-purple-500/30 rounded-xl bg-purple-500/10 flex flex-col gap-3">
+                <div className="p-4 border border-emerald-500/30 rounded-xl bg-emerald-500/10 flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <div className="truncate pr-2">
                       <p className="font-medium text-white truncate">{audioFile.name}</p>
@@ -283,7 +283,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
                           <button
                             type="button"
                             onClick={togglePlayPreview}
-                            className="p-2 rounded-full bg-purple-600 hover:bg-purple-500 text-white transition flex items-center justify-center"
+                            className="p-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition flex items-center justify-center shadow-md shadow-emerald-500/20"
                           >
                             {isPlayingPreview ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
                           </button>
@@ -327,24 +327,24 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
               {!coverFile ? (
                 <div
                   onClick={() => coverInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center p-5 border-2 border-dashed border-white/15 rounded-xl bg-white/[0.02] hover:bg-purple-500/5 hover:border-purple-500/40 transition cursor-pointer group text-center"
+                  className="flex flex-col items-center justify-center p-5 border-2 border-dashed border-white/15 rounded-xl bg-white/[0.02] hover:bg-emerald-500/5 hover:border-emerald-500/40 transition cursor-pointer group text-center"
                 >
                   {user?.avatarUrl ? (
-                    <div className="flex items-center gap-3 mb-2 bg-purple-500/10 p-2 rounded-xl border border-purple-500/20">
+                    <div className="flex items-center gap-3 mb-2 bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/20">
                       <img
                         src={user.avatarUrl.startsWith('http') ? user.avatarUrl : `${API_BASE_URL}${user.avatarUrl}`}
                         alt="Avatar"
-                        className="w-10 h-10 object-cover rounded-lg border border-purple-500/30 shrink-0"
+                        className="w-10 h-10 object-cover rounded-lg border border-emerald-500/30 shrink-0"
                       />
                       <div className="text-left">
-                        <p className="text-xs font-semibold text-purple-300">Foto de Perfil asignada por defecto</p>
+                        <p className="text-xs font-semibold text-emerald-300">Foto de Perfil asignada por defecto</p>
                         <p className="text-[11px] text-zinc-400">Haz clic para elegir una portada diferente</p>
                       </div>
                     </div>
                   ) : (
                     <>
-                      <ImageIcon className="w-8 h-8 text-zinc-400 group-hover:text-purple-400 transition mb-2" />
-                      <span className="font-medium text-white group-hover:text-purple-300">Seleccionar Portada</span>
+                      <ImageIcon className="w-8 h-8 text-zinc-400 group-hover:text-emerald-400 transition mb-2" />
+                      <span className="font-medium text-white group-hover:text-emerald-300">Seleccionar Portada</span>
                       <span className="text-xs text-zinc-500 mt-1">JPG, PNG o WEBP (máx 10MB)</span>
                     </>
                   )}
@@ -384,7 +384,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Ej. Midnight Dreams"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500/50"
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500/50"
                 required
               />
             </div>
@@ -396,7 +396,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
                 placeholder="Detalles sobre el estilo, instrumentos o inspiración..."
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500/50 resize-none"
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500/50 resize-none"
               />
             </div>
 
@@ -405,7 +405,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
               <select
                 value={genre}
                 onChange={(e) => setGenre(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[#1a1a20] border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50"
+                className="w-full px-4 py-2.5 bg-[#10171e] border border-white/10 rounded-xl text-white focus:outline-none focus:border-emerald-500/50"
               >
                 <option value="Trap">Trap</option>
                 <option value="Hip Hop">Hip Hop</option>
@@ -427,7 +427,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="29.99"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50"
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-emerald-500/50"
                 required
               />
             </div>
@@ -439,7 +439,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
                 value={bpm}
                 onChange={(e) => setBpm(e.target.value)}
                 placeholder="120"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50"
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-emerald-500/50"
               />
             </div>
 
@@ -450,7 +450,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
                 value={keySignature}
                 onChange={(e) => setKeySignature(e.target.value)}
                 placeholder="Ej. C Minor, F# Major"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50"
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-emerald-500/50"
               />
             </div>
 
@@ -461,7 +461,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="Ej. drake, dark, hard, 808"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500/50"
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500/50"
               />
             </div>
           </div>
@@ -469,13 +469,13 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
           {/* Barra de Progreso de Subida */}
           {isSubmitting && (
             <div className="space-y-2 pt-2">
-              <div className="flex justify-between text-xs font-medium text-purple-300">
+              <div className="flex justify-between text-xs font-medium text-emerald-300">
                 <span>Subiendo archivos a OZIRIS...</span>
                 <span>{uploadProgress}%</span>
               </div>
               <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-150"
+                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-150"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -488,7 +488,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl border border-white/10 hover:bg-white/10 text-zinc-300 font-medium transition"
+              className="px-5 py-2.5 rounded-xl border border-white/10 hover:bg-white/10 text-zinc-300 font-medium transition cursor-pointer"
             >
               Cancelar
             </button>
@@ -496,16 +496,16 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold transition shadow-lg shadow-purple-500/25 active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold transition shadow-lg shadow-emerald-500/20 active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
                   <span>Publicando...</span>
                 </>
               ) : (
                 <>
-                  <UploadCloud className="w-4 h-4" />
+                  <UploadCloud className="w-4 h-4 text-slate-950" />
                   <span>Publicar Beat</span>
                 </>
               )}

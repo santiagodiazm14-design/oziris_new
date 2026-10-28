@@ -124,7 +124,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-[#111116] border border-purple-500/25 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(147,51,234,0.25)] flex flex-col gap-6 max-h-[90vh] overflow-y-auto scrollbar-hide text-white">
+      <div className="relative w-full max-w-xl bg-[#090d10] border border-emerald-500/15 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(0,0,0,0.7)] flex flex-col gap-6 max-h-[90vh] overflow-y-auto scrollbar-hide text-white">
         
         {/* TOAST NOTIFICATION */}
         {notification && (
@@ -145,10 +145,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         )}
 
         {/* MODAL HEADER */}
-        <div className="flex items-center justify-between border-b border-purple-500/20 pb-4">
+        <div className="flex items-center justify-between border-b border-emerald-500/15 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center shadow-md shadow-emerald-500/20">
+              <Sparkles className="w-5 h-5 text-emerald-300" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-white tracking-tight">
@@ -176,7 +176,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           
           {/* AVATAR UPLOAD */}
           <div className="flex flex-col items-center justify-center gap-2.5 pb-2">
-            <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-purple-500/40 bg-zinc-900 shadow-xl group">
+            <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-emerald-500/35 bg-zinc-900 shadow-xl group">
               {fullAvatarPath ? (
                 <img
                   src={fullAvatarPath}
@@ -184,7 +184,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/50 to-blue-900/50 text-white font-extrabold text-3xl">
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#122421] to-[#0c181f] text-emerald-300 font-extrabold text-3xl">
                   {name ? name.charAt(0).toUpperCase() : "U"}
                 </div>
               )}
@@ -195,10 +195,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-all duration-200"
               >
                 {isUploadingAvatar ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+                  <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
                 ) : (
                   <>
-                    <Camera className="w-6 h-6 mb-1 text-purple-300" />
+                    <Camera className="w-6 h-6 mb-1 text-emerald-300" />
                     <span className="text-[11px] font-semibold">Cambiar Foto</span>
                   </>
                 )}
@@ -220,7 +220,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           {/* EMAIL & ROLE (SOLO LECTURA) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-white/[0.02] border border-white/5 rounded-2xl text-xs">
             <div className="flex items-center gap-2 text-zinc-400">
-              <Mail className="w-4 h-4 text-purple-400 shrink-0" />
+              <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
               <div className="truncate">
                 <span className="block text-[10px] text-zinc-500">Correo Electrónico</span>
                 <span className="text-white font-medium truncate">{user?.email}</span>
@@ -228,10 +228,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
 
             <div className="flex items-center gap-2 text-zinc-400">
-              <Shield className="w-4 h-4 text-cyan-400 shrink-0" />
+              <Shield className="w-4 h-4 text-teal-400 shrink-0" />
               <div>
                 <span className="block text-[10px] text-zinc-500">Tipo de Cuenta</span>
-                <span className={`font-bold uppercase ${isArtist ? 'text-blue-400' : 'text-purple-300'}`}>
+                <span className={`font-bold uppercase ${isArtist ? 'text-teal-300' : 'text-emerald-300'}`}>
                   {isAdmin ? 'ADMINISTRADOR' : isArtist ? 'ARTISTA / PRODUCTOR' : 'USUARIO / OYENTE'}
                 </span>
               </div>
@@ -252,7 +252,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ej. Juan"
-                  className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50"
                 />
               </div>
             </div>
@@ -268,7 +268,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Ej. Pérez"
-                  className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50"
                 />
               </div>
             </div>
@@ -283,14 +283,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Mic className="h-4 w-4 text-blue-400" />
+                    <Mic className="h-4 w-4 text-emerald-400" />
                   </div>
                   <input
                     type="text"
                     value={artistName}
                     onChange={(e) => setArtistName(e.target.value)}
                     placeholder="Ej. OZIRIS Lil Trap / Juan Beatmaker"
-                    className="w-full pl-10 pr-3 py-2.5 bg-blue-500/5 border border-blue-500/20 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="w-full pl-10 pr-3 py-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50"
                   />
                 </div>
               </div>
@@ -308,7 +308,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="Ej. Medellín, Colombia"
-                    className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50"
                   />
                 </div>
               </div>
@@ -328,13 +328,13 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="Ej. Medellín, Colombia"
-                    className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50"
                   />
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 flex items-center gap-2.5">
-                <Sparkles className="w-4 h-4 shrink-0 text-purple-400" />
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 shrink-0 text-emerald-400" />
                 <span>
                   Cuenta de Oyente: Puedes explorar, escuchar beats y comprar licencias oficiales. La subida y venta de instrumentales está habilitada exclusivamente para perfiles de Artista.
                 </span>
@@ -352,32 +352,32 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="Cuéntanos un poco sobre tus proyectos, estilo musical o colaboraciones..."
-              className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition resize-none"
+              className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition resize-none"
             />
           </div>
 
           {/* BOTONES */}
-          <div className="flex items-center justify-end gap-3 border-t border-purple-500/20 pt-4 mt-2">
+          <div className="flex items-center justify-end gap-3 border-t border-emerald-500/15 pt-4 mt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition"
+              className="px-5 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold px-6 py-2.5 rounded-xl shadow-lg shadow-purple-500/25 transition transform active:scale-98 disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition transform active:scale-98 disabled:opacity-50 cursor-pointer"
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
                   <span>Guardando...</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4" />
+                  <Save className="w-4 h-4 text-slate-950" />
                   <span>Guardar Cambios</span>
                 </>
               )}

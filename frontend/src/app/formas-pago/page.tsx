@@ -27,20 +27,20 @@ export default function FormasPagoPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white font-sans">
+    <main className="min-h-screen bg-[#090d10] text-white font-sans">
       {/* Header */}
-      <header className="border-b border-white/5 bg-[#0a0a0a]/95 backdrop-blur-md">
+      <header className="border-b border-emerald-500/10 bg-[#090d10]/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             href="/inicio"
-            className="flex items-center gap-2 text-zinc-400 hover:text-white transition"
+            className="flex items-center gap-2 text-zinc-400 hover:text-emerald-300 transition"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Volver a Beats</span>
           </Link>
 
           <div className="text-xl font-bold tracking-[0.35em]">
-            O<span className="text-purple-500">Z</span>IRIS
+            O<span className="text-emerald-400">Z</span>IRIS
           </div>
         </div>
       </header>
@@ -48,8 +48,8 @@ export default function FormasPagoPage() {
       {/* Contenido */}
       <section className="max-w-6xl mx-auto px-4 py-16">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 text-purple-400 px-4 py-2 rounded-full text-sm font-medium mb-5">
-            <ShieldCheck className="w-4 h-4" />
+          <span className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-medium mb-5">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
             Pagos seguros
           </span>
 
@@ -67,9 +67,9 @@ export default function FormasPagoPage() {
           {paymentMethods.map((method) => (
             <div
               key={method.title}
-              className="group bg-[#121216] border border-white/10 hover:border-purple-500/40 rounded-2xl p-7 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10"
+              className="group bg-[#0f151c] border border-emerald-500/10 hover:border-emerald-500/40 rounded-2xl p-7 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/10"
             >
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600/20 to-blue-600/20 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-5 group-hover:scale-105 transition">
+              <div className="w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-5 group-hover:scale-105 transition">
                 {method.icon}
               </div>
 
@@ -81,7 +81,7 @@ export default function FormasPagoPage() {
                 {method.description}
               </p>
 
-              <div className="flex items-center gap-2 mt-6 text-xs text-emerald-400">
+              <div className="flex items-center gap-2 mt-6 text-xs text-emerald-400 font-medium">
                 <CheckCircle2 className="w-4 h-4" />
                 Disponible
               </div>
@@ -90,7 +90,7 @@ export default function FormasPagoPage() {
         </div>
 
         {/* Seguridad */}
-        <div className="mt-10 bg-white/[0.03] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-5">
+        <div className="mt-10 bg-[#0f151c] border border-emerald-500/10 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-5">
           <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
             <ShieldCheck className="w-6 h-6 text-emerald-400" />
           </div>
@@ -112,7 +112,7 @@ export default function FormasPagoPage() {
         <div className="flex justify-center mt-10">
           <Link
             href="/inicio"
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold px-7 py-3 rounded-xl shadow-lg shadow-purple-500/20 transition transform hover:scale-105"
+            className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold px-7 py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition transform hover:scale-105"
           >
             Explorar Beats
           </Link>

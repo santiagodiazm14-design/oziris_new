@@ -72,7 +72,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@correo.com"
-              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-all"
             />
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function LoginPage() {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium text-zinc-300">Contraseña</label>
-            <Link href="/recuperacion-clave" className="text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors">
+            <Link href="/recuperacion-clave" className="text-sm font-medium text-emerald-400 hover:text-emerald-300 transition-colors">
               ¿Olvidaste tu contraseña?
             </Link>
           </div>
@@ -95,7 +95,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-all"
             />
           </div>
         </div>
@@ -104,11 +104,11 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-purple-500/25 mt-2 disabled:opacity-50 cursor-pointer"
+          className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 mt-2 disabled:opacity-50 cursor-pointer"
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
               <span>Iniciando Sesión...</span>
             </>
           ) : (
@@ -122,7 +122,7 @@ export default function LoginPage() {
 
       <div className="mt-4 text-center text-zinc-400">
         ¿No tienes una cuenta?{' '}
-        <Link href="/register" className="text-purple-400 font-medium hover:text-purple-300 transition-colors">
+        <Link href="/register" className="text-emerald-400 font-semibold hover:text-emerald-300 transition-colors">
           Regístrate
         </Link>
       </div>

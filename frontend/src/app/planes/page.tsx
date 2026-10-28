@@ -53,18 +53,18 @@ export default function PricingPage() {
 
   return (
     // Contenedor principal: min-h-screen para cubrir toda la pantalla, con fondo oscuro
-    <div className="min-h-screen bg-[#0a0a0a] text-white py-20 px-4 flex flex-col items-center relative overflow-hidden">
+    <div className="min-h-screen bg-[#090d10] text-white py-20 px-4 flex flex-col items-center relative overflow-hidden">
       <button 
         onClick={() => router.push('/inicio')}
-        className="absolute top-8 left-8 md:top-12 md:left-12 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors z-20"
+        className="absolute top-8 left-8 md:top-12 md:left-12 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors z-20 cursor-pointer"
       >
         <X className="w-6 h-6 text-zinc-400" />
       </button>
 
-      {/* Background Glow Decorators: Círculos con desenfoque extremo para dar efecto glassmorphism premium */}
+      {/* Background Glow Decorators */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-full z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/20 blur-[120px]" />
-        <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[120px]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-500/10 blur-[120px]" />
+        <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-teal-500/10 blur-[120px]" />
       </div>
 
       <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col items-center">
@@ -83,14 +83,14 @@ export default function PricingPage() {
               key={plan.name}
               className={`relative flex flex-col p-8 rounded-3xl transition-all duration-300 hover:-translate-y-2 animate-in fade-in slide-in-from-bottom-8 ${
                 plan.highlighted 
-                  ? 'bg-gradient-to-b from-purple-900/20 to-blue-900/10 border border-purple-500/50 shadow-2xl shadow-purple-500/20' 
+                  ? 'bg-gradient-to-b from-emerald-950/30 to-teal-950/20 border border-emerald-500/40 shadow-2xl shadow-emerald-500/15' 
                   : 'bg-zinc-900/40 border border-white/5 hover:border-white/10 hover:bg-zinc-900/60 backdrop-blur-sm'
               }`}
               style={{ animationDelay: `${index * 150}ms` }}
             >
               {plan.highlighted && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-bold px-4 py-1 rounded-full flex items-center gap-1 shadow-lg whitespace-nowrap">
-                  <Star className="w-3.5 h-3.5 fill-white" /> MÁS POPULAR
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-xs font-extrabold px-4 py-1 rounded-full flex items-center gap-1 shadow-md whitespace-nowrap">
+                  <Star className="w-3.5 h-3.5 fill-slate-950" /> MÁS POPULAR
                 </div>
               )}
 
@@ -104,7 +104,7 @@ export default function PricingPage() {
                   <span className="text-4xl md:text-5xl font-bold tracking-tighter">{plan.priceYear}</span>
                   <span className="text-zinc-400 font-medium">/ año</span>
                 </div>
-                <div className="text-sm font-medium text-purple-400/80">
+                <div className="text-sm font-medium text-emerald-400">
                   Mes por tan solo {plan.priceMonth}
                 </div>
               </div>
@@ -117,8 +117,8 @@ export default function PricingPage() {
                 <ul className="space-y-4">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-zinc-300">
-                      <div className="mt-0.5 bg-purple-500/20 p-1 rounded-full shrink-0">
-                        <Check className="w-3.5 h-3.5 text-purple-400" />
+                      <div className="mt-0.5 bg-emerald-500/20 p-1 rounded-full shrink-0">
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
                       </div>
                       <span className="leading-relaxed">{feature}</span>
                     </li>
@@ -128,9 +128,9 @@ export default function PricingPage() {
 
               <div className="mt-10 pt-4">
                 <button
-                  className={`w-full py-3.5 rounded-xl font-medium transition-all active:scale-[0.98] ${
+                  className={`w-full py-3.5 rounded-xl font-bold transition-all active:scale-[0.98] cursor-pointer ${
                     plan.highlighted
-                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg shadow-purple-500/25'
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 shadow-lg shadow-emerald-500/20'
                       : 'bg-white/10 hover:bg-white/20 text-white border border-white/5'
                   }`}
                 >

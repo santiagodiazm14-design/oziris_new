@@ -19,6 +19,7 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { CreateUserDto, UpdateUserDto, UpdateProfileDto } from './dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -29,15 +30,7 @@ export class UsersController {
   @Patch('profile')
   async updateProfile(
     @Request() req: any,
-    @Body()
-    body: Partial<{
-      name: string;
-      lastName: string;
-      artistName: string;
-      location: string;
-      bio: string;
-      avatarUrl: string;
-    }>,
+    @Body() body: UpdateProfileDto,
   ) {
     return this.usersService.updateProfile(req.user.id, body);
   }
@@ -96,7 +89,7 @@ export class UsersController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles('ADMIN')
-  async create(@Body() body: { name: string; email: string; password: string; role?: string }) {
+  async create(@Body() body: CreateUserDto) {
     return this.usersService.createUser(body);
   }
 
@@ -105,7 +98,7 @@ export class UsersController {
   @Roles('ADMIN')
   async update(
     @Param('id') id: string,
-    @Body() body: Partial<{ name: string; lastName: string; artistName: string; location: string; role: string; isActive: boolean; bio: string; avatarUrl: string }>,
+    @Body() body: UpdateUserDto,
   ) {
     return this.usersService.updateUser(id, body);
   }

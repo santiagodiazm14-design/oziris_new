@@ -1,15 +1,9 @@
 import { UsersService } from './users.service';
+import { CreateUserDto, UpdateUserDto, UpdateProfileDto } from './dto';
 export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
-    updateProfile(req: any, body: Partial<{
-        name: string;
-        lastName: string;
-        artistName: string;
-        location: string;
-        bio: string;
-        avatarUrl: string;
-    }>): Promise<import("./users.service").UserResponse>;
+    updateProfile(req: any, body: UpdateProfileDto): Promise<import("./users.service").UserResponse>;
     uploadAvatar(req: any, file: any): Promise<import("./users.service").UserResponse>;
     getFavorites(req: any): Promise<string[] | ({
         producer: {
@@ -64,22 +58,8 @@ export declare class UsersController {
     }>;
     findAll(search?: string): Promise<import("./users.service").UserResponse[]>;
     findOne(id: string): Promise<import("./users.service").UserResponse>;
-    create(body: {
-        name: string;
-        email: string;
-        password: string;
-        role?: string;
-    }): Promise<import("./users.service").UserResponse>;
-    update(id: string, body: Partial<{
-        name: string;
-        lastName: string;
-        artistName: string;
-        location: string;
-        role: string;
-        isActive: boolean;
-        bio: string;
-        avatarUrl: string;
-    }>): Promise<import("./users.service").UserResponse>;
+    create(body: CreateUserDto): Promise<import("./users.service").UserResponse>;
+    update(id: string, body: UpdateUserDto): Promise<import("./users.service").UserResponse>;
     remove(id: string): Promise<{
         success: boolean;
         message: string;

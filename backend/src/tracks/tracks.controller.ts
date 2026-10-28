@@ -13,7 +13,8 @@ import {
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { TracksService, Track } from './tracks.service';
+import { TracksService } from './tracks.service';
+import { Track, QueryTracksDto } from './dto';
 
 @Controller('tracks')
 export class TracksController {

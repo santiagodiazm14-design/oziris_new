@@ -79,8 +79,8 @@ export default function RegisterPage() {
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-2 text-center lg:text-left">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-medium w-fit mx-auto lg:mx-0">
-          <Sparkles className="w-3.5 h-3.5" />
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-medium w-fit mx-auto lg:mx-0">
+          <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
           <span>Comunidad Oziris Music</span>
         </div>
         <h2 className="text-3xl font-bold text-white tracking-tight">Crea tu cuenta</h2>
@@ -109,7 +109,7 @@ export default function RegisterPage() {
               onClick={() => setAccountType('USER')}
               className={`relative flex flex-col items-start text-left p-4 rounded-xl border transition-all cursor-pointer ${
                 accountType === 'USER'
-                  ? 'bg-purple-600/15 border-purple-500 ring-2 ring-purple-500/30 text-white shadow-lg shadow-purple-900/20'
+                  ? 'bg-emerald-500/15 border-emerald-500 ring-2 ring-emerald-500/30 text-white shadow-lg shadow-emerald-950/20'
                   : 'bg-white/[0.03] border-white/10 hover:border-white/20 text-zinc-300 hover:bg-white/[0.06]'
               }`}
             >
@@ -117,14 +117,14 @@ export default function RegisterPage() {
                 <div
                   className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
                     accountType === 'USER'
-                      ? 'bg-purple-600 text-white shadow-md'
+                      ? 'bg-emerald-500 text-slate-950 font-bold shadow-md'
                       : 'bg-white/10 text-zinc-400'
                   }`}
                 >
                   <Headphones className="w-5 h-5" />
                 </div>
                 {accountType === 'USER' && (
-                  <CheckCircle2 className="w-5 h-5 text-purple-400 animate-in zoom-in-75 duration-200" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 animate-in zoom-in-75 duration-200" />
                 )}
               </div>
               <span className="font-semibold text-sm text-white">Usuario / Oyente</span>
@@ -139,7 +139,7 @@ export default function RegisterPage() {
               onClick={() => setAccountType('ARTIST')}
               className={`relative flex flex-col items-start text-left p-4 rounded-xl border transition-all cursor-pointer ${
                 accountType === 'ARTIST'
-                  ? 'bg-blue-600/15 border-blue-500 ring-2 ring-blue-500/30 text-white shadow-lg shadow-blue-900/20'
+                  ? 'bg-teal-500/15 border-teal-500 ring-2 ring-teal-500/30 text-white shadow-lg shadow-teal-950/20'
                   : 'bg-white/[0.03] border-white/10 hover:border-white/20 text-zinc-300 hover:bg-white/[0.06]'
               }`}
             >
@@ -147,14 +147,14 @@ export default function RegisterPage() {
                 <div
                   className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
                     accountType === 'ARTIST'
-                      ? 'bg-blue-600 text-white shadow-md'
+                      ? 'bg-teal-500 text-slate-950 font-bold shadow-md'
                       : 'bg-white/10 text-zinc-400'
                   }`}
                 >
                   <Music className="w-5 h-5" />
                 </div>
                 {accountType === 'ARTIST' && (
-                  <CheckCircle2 className="w-5 h-5 text-blue-400 animate-in zoom-in-75 duration-200" />
+                  <CheckCircle2 className="w-5 h-5 text-teal-400 animate-in zoom-in-75 duration-200" />
                 )}
               </div>
               <span className="font-semibold text-sm text-white">Artista / Productor</span>
@@ -167,16 +167,16 @@ export default function RegisterPage() {
 
         {/* CAMPOS DINÁMICOS PARA ARTISTA */}
         {accountType === 'ARTIST' && (
-          <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center gap-2 text-blue-300 text-xs font-medium">
-              <Sparkles className="w-4 h-4" />
+          <div className="p-4 rounded-xl bg-teal-500/5 border border-teal-500/20 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-2 text-teal-300 text-xs font-medium">
+              <Sparkles className="w-4 h-4 text-teal-400" />
               <span>Información de tu Perfil Artístico</span>
             </div>
 
             {/* Nombre Artístico */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-zinc-300">
-                Nombre Artístico / Productor <span className="text-blue-400">*</span>
+                Nombre Artístico / Productor <span className="text-teal-400">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -188,7 +188,7 @@ export default function RegisterPage() {
                   value={artisticName}
                   onChange={(e) => setArtisticName(e.target.value)}
                   placeholder="Ej. Oziris Beats, DJ Metro"
-                  className="w-full pl-9 pr-4 py-2.5 bg-black/40 border border-white/10 rounded-lg text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                  className="w-full pl-9 pr-4 py-2.5 bg-black/40 border border-white/10 rounded-lg text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/50 transition-all"
                 />
               </div>
             </div>
@@ -205,7 +205,7 @@ export default function RegisterPage() {
                 <select
                   value={genre}
                   onChange={(e) => setGenre(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 bg-black/40 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all cursor-pointer"
+                  className="w-full pl-9 pr-4 py-2.5 bg-black/40 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500/50 transition-all cursor-pointer"
                 >
                   <option value="" className="bg-zinc-900 text-zinc-400">Seleccionar género musical...</option>
                   <option value="Trap" className="bg-zinc-900 text-white">Trap</option>
@@ -235,7 +235,7 @@ export default function RegisterPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej. Juan Pérez"
-              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all text-sm"
+              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-all text-sm"
             />
           </div>
         </div>
@@ -253,7 +253,7 @@ export default function RegisterPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@correo.com"
-              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all text-sm"
+              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-all text-sm"
             />
           </div>
         </div>
@@ -271,7 +271,7 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Mínimo 6 caracteres"
-              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all text-sm"
+              className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-all text-sm"
             />
           </div>
         </div>
@@ -280,11 +280,11 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-purple-500/25 mt-2 disabled:opacity-50 cursor-pointer text-sm"
+          className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 mt-2 disabled:opacity-50 cursor-pointer text-sm"
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
               <span>Creando cuenta...</span>
             </>
           ) : (
@@ -300,7 +300,7 @@ export default function RegisterPage() {
 
       <div className="mt-2 text-center text-zinc-400 text-sm">
         ¿Ya tienes una cuenta?{' '}
-        <Link href="/login" className="text-purple-400 font-medium hover:text-purple-300 transition-colors">
+        <Link href="/login" className="text-emerald-400 font-semibold hover:text-emerald-300 transition-colors">
           Inicia sesión
         </Link>
       </div>

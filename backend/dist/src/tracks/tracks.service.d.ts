@@ -1,27 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
-export interface Track {
-    id: string;
-    title: string;
-    description?: string;
-    price: number;
-    genre?: string;
-    bpm?: number;
-    key?: string;
-    tags?: string[];
-    audioUrl: string;
-    fullAudioUrl?: string;
-    coverUrl?: string;
-    producerId: string;
-    producer?: {
-        id: string;
-        name: string;
-        email: string;
-        avatarUrl?: string | null;
-        artistName?: string | null;
-    };
-    createdAt: string;
-    updatedAt: string;
-}
+import { Track } from './dto';
+export type { Track };
 export declare class TracksService {
     private readonly prisma;
     private inMemoryTracks;

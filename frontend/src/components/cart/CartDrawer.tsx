@@ -38,13 +38,13 @@ export default function CartDrawer() {
       />
 
       <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-        <div className="pointer-events-auto w-screen max-w-md bg-[#121216] border-l border-white/10 text-white flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+        <div className="pointer-events-auto w-screen max-w-md bg-[#090d10] border-l border-emerald-500/15 text-white flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
           
           {/* HEADER DEL CARRITO */}
           <div className="flex items-center justify-between p-6 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                <ShoppingBag className="w-5 h-5 text-purple-400" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <ShoppingBag className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
                 <h2 className="text-xl font-bold">Tu Carrito</h2>
@@ -67,8 +67,8 @@ export default function CartDrawer() {
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {cartItems.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center py-12">
-                <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-4">
-                  <Music2 className="w-8 h-8 text-purple-400" />
+                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4">
+                  <Music2 className="w-8 h-8 text-emerald-400" />
                 </div>
                 <h3 className="text-lg font-bold mb-2">Tu carrito está vacío</h3>
                 <p className="text-sm text-zinc-400 max-w-xs mb-6">
@@ -76,7 +76,7 @@ export default function CartDrawer() {
                 </p>
                 <button
                   onClick={closeCart}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition"
+                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-sm transition shadow-md shadow-emerald-500/20"
                 >
                   Explorar Beats
                 </button>
@@ -85,10 +85,10 @@ export default function CartDrawer() {
               cartItems.map((track) => (
                 <div
                   key={track.id}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/5 hover:border-purple-500/30 transition group"
+                  className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/5 hover:border-emerald-500/30 transition group"
                 >
                   {/* Portada */}
-                  <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-purple-900/30 border border-purple-500/20">
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-emerald-950/40 border border-emerald-500/20">
                     {getImageUrl(track.coverUrl) ? (
                       <Image
                         src={getImageUrl(track.coverUrl)!}
@@ -99,20 +99,20 @@ export default function CartDrawer() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Music2 className="w-6 h-6 text-purple-400" />
+                        <Music2 className="w-6 h-6 text-emerald-400" />
                       </div>
                     )}
                   </div>
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-sm truncate text-white group-hover:text-purple-300 transition">
+                    <h4 className="font-bold text-sm truncate text-white group-hover:text-emerald-300 transition">
                       {track.title}
                     </h4>
                     <p className="text-xs text-zinc-400 truncate mt-0.5">
                       {track.genre || "Beat"} • {track.producer?.name || "Oziris Producer"}
                     </p>
-                    <p className="text-sm font-bold text-purple-400 mt-1">
+                    <p className="text-sm font-bold text-emerald-400 mt-1">
                       {formatPrice(track.price)}
                     </p>
                   </div>
@@ -132,7 +132,7 @@ export default function CartDrawer() {
 
           {/* PIE DE PÁGINA Y PAGO */}
           {cartItems.length > 0 && (
-            <div className="p-6 border-t border-white/10 bg-[#0d0d10] space-y-4">
+            <div className="p-6 border-t border-white/10 bg-[#0c1217] space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-zinc-400">Subtotal ({cartCount} beats)</span>
@@ -144,7 +144,7 @@ export default function CartDrawer() {
                 </div>
                 <div className="border-t border-white/10 pt-3 flex items-center justify-between">
                   <span className="font-bold text-base">Total</span>
-                  <span className="text-2xl font-bold text-purple-400">
+                  <span className="text-2xl font-bold text-emerald-400">
                     {formatPrice(totalPrice)}
                   </span>
                 </div>
@@ -153,10 +153,10 @@ export default function CartDrawer() {
               <Link
                 href={checkoutUrl}
                 onClick={closeCart}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-purple-500/25 transition transform hover:scale-[1.01]"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition transform hover:scale-[1.01]"
               >
                 <span>Proceder al Pago</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 text-slate-950" />
               </Link>
 
               <div className="flex items-center justify-center gap-2 text-xs text-zinc-500 pt-1">

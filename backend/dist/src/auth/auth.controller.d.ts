@@ -1,39 +1,30 @@
 import { AuthService } from './auth.service';
+import { RegisterDto, LoginDto, ForgotPasswordDto, VerifyResetCodeDto, ResetPasswordDto } from './dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
-    register(body: {
-        name: string;
-        email: string;
-        password: string;
-        accountType?: 'USER' | 'ARTIST';
-        artisticName?: string;
-        genre?: string;
-    }): Promise<{
+    register(body: RegisterDto): Promise<{
         message: string;
         access_token: string;
-        user: import("../users/users.service").UserResponse;
+        user: import("../users/dto").UserResponse;
     }>;
-    login(body: {
-        email: string;
-        password: string;
-    }): Promise<{
+    login(body: LoginDto): Promise<{
         message: string;
         access_token: string;
-        user: import("../users/users.service").UserResponse;
+        user: import("../users/dto").UserResponse;
     }>;
-    getProfile(req: any): Promise<import("../users/users.service").UserResponse>;
-    forgotPassword(email: string, req: any): Promise<{
+    getProfile(req: any): Promise<import("../users/dto").UserResponse>;
+    forgotPassword(body: ForgotPasswordDto, req: any): Promise<{
         message: string;
         email?: undefined;
     } | {
         message: string;
         email: string;
     }>;
-    verifyResetCode(email: string, code: string): Promise<{
+    verifyResetCode(body: VerifyResetCodeDto): Promise<{
         message: string;
     }>;
-    resetPassword(email: string, code: string, newPassword: string): Promise<{
+    resetPassword(body: ResetPasswordDto): Promise<{
         message: string;
     }>;
 }

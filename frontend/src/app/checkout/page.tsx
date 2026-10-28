@@ -81,10 +81,10 @@ function CheckoutContent() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+      <main className="min-h-screen bg-[#090d10] text-white flex items-center justify-center">
         <div className="text-center">
 
-          <Loader2 className="w-10 h-10 text-purple-400 animate-spin mx-auto mb-4" />
+          <Loader2 className="w-10 h-10 text-emerald-400 animate-spin mx-auto mb-4" />
 
           <p className="text-zinc-400">
             Cargando información del Beat...
@@ -97,7 +97,7 @@ function CheckoutContent() {
 
   if (error || !track) {
     return (
-      <main className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center px-4">
+      <main className="min-h-screen bg-[#090d10] text-white flex items-center justify-center px-4">
 
         <div className="text-center max-w-md">
 
@@ -117,9 +117,9 @@ function CheckoutContent() {
 
           <Link
             href="/inicio"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 px-5 py-3 rounded-xl font-semibold transition"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 px-5 py-3 rounded-xl font-bold transition shadow-md shadow-emerald-500/20"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 text-slate-950" />
             Volver al catálogo
           </Link>
 
@@ -130,10 +130,10 @@ function CheckoutContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white font-sans">
+    <main className="min-h-screen bg-[#090d10] text-white font-sans">
 
       {/* HEADER */}
-      <header className="border-b border-white/5 bg-[#0a0a0a]/95 backdrop-blur-md">
+      <header className="border-b border-emerald-500/15 bg-[#090d10]/95 backdrop-blur-md">
 
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
 
@@ -147,11 +147,11 @@ function CheckoutContent() {
 
           <div className="flex items-center gap-2">
 
-            <ShoppingBag className="w-5 h-5 text-purple-400" />
+            <ShoppingBag className="w-5 h-5 text-emerald-400" />
 
             <span className="text-xl font-bold tracking-[0.25em]">
 
-              O<span className="text-purple-500">Z</span>IRIS
+              O<span className="text-emerald-400">Z</span>IRIS
 
             </span>
 
@@ -167,7 +167,7 @@ function CheckoutContent() {
         {/* TITULO */}
         <div className="text-center mb-10">
 
-          <span className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 text-purple-400 px-4 py-2 rounded-full text-sm font-medium mb-5">
+          <span className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-4 py-2 rounded-full text-sm font-medium mb-5">
 
             <ShieldCheck className="w-4 h-4" />
 
@@ -195,10 +195,10 @@ function CheckoutContent() {
           {/* RESUMEN */}
           <div className="lg:col-span-1">
 
-            <div className="bg-[#121216] border border-white/10 rounded-2xl p-6 sticky top-24">
+            <div className="bg-[#0f151c] border border-white/10 rounded-2xl p-6 sticky top-24">
 
               {/* PORTADA */}
-              <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-purple-900/60 to-blue-900/60 border border-purple-500/20 mb-6">
+              <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-[#122421] to-[#0c181f] border border-emerald-500/20 mb-6">
 
                 {getImageUrl(track.coverUrl) ? (
 
@@ -214,7 +214,7 @@ function CheckoutContent() {
 
                   <div className="w-full h-full flex items-center justify-center">
 
-                    <Music2 className="w-16 h-16 text-purple-400" />
+                    <Music2 className="w-16 h-16 text-emerald-400" />
 
                   </div>
 
@@ -225,7 +225,7 @@ function CheckoutContent() {
               {/* INFORMACIÓN */}
               <div className="mb-6">
 
-                <p className="text-xs text-purple-400 uppercase tracking-wider font-semibold">
+                <p className="text-xs text-emerald-400 uppercase tracking-wider font-semibold">
 
                   Beat seleccionado
 
@@ -255,7 +255,7 @@ function CheckoutContent() {
 
                 {track.genre && (
 
-                  <span className="inline-block mt-3 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs text-purple-400">
+                  <span className="inline-block mt-3 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
 
                     {track.genre}
 
@@ -342,7 +342,7 @@ function CheckoutContent() {
           {/* FORMAS DE PAGO */}
           <div className="lg:col-span-2">
 
-            <div className="bg-[#121216] border border-white/10 rounded-2xl p-6 md:p-8">
+            <div className="bg-[#0f151c] border border-white/10 rounded-2xl p-6 md:p-8">
 
               <h2 className="text-2xl font-bold mb-2">
 
@@ -364,16 +364,16 @@ function CheckoutContent() {
                   onClick={() => setPaymentMethod("PSE")}
                   className={`group text-left p-6 rounded-2xl border transition-all duration-200 cursor-pointer ${
                     paymentMethod === "PSE"
-                      ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10 ring-2 ring-purple-500/20"
-                      : "bg-white/[0.03] border-white/10 hover:border-purple-500/40 hover:bg-purple-500/5"
+                      ? "border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/10 ring-2 ring-emerald-500/20"
+                      : "bg-white/[0.03] border-white/10 hover:border-emerald-500/40 hover:bg-emerald-500/5"
                   }`}
                 >
 
                   <div className="flex items-center gap-4">
 
-                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0">
 
-                      <Building2 className="w-6 h-6 text-blue-400" />
+                      <Building2 className="w-6 h-6 text-teal-400" />
 
                     </div>
 
@@ -400,7 +400,7 @@ function CheckoutContent() {
                       </>
                     ) : (
                       <>
-                        <div className="w-4 h-4 rounded-full border border-zinc-600 group-hover:border-purple-400 transition" />
+                        <div className="w-4 h-4 rounded-full border border-zinc-600 group-hover:border-emerald-400 transition" />
                         <span className="text-zinc-400 group-hover:text-zinc-200">Seleccionar PSE</span>
                       </>
                     )}
@@ -415,16 +415,16 @@ function CheckoutContent() {
                   onClick={() => setPaymentMethod("Tarjeta")}
                   className={`group text-left p-6 rounded-2xl border transition-all duration-200 cursor-pointer ${
                     paymentMethod === "Tarjeta"
-                      ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10 ring-2 ring-purple-500/20"
-                      : "bg-white/[0.03] border-white/10 hover:border-purple-500/40 hover:bg-purple-500/5"
+                      ? "border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/10 ring-2 ring-emerald-500/20"
+                      : "bg-white/[0.03] border-white/10 hover:border-emerald-500/40 hover:bg-emerald-500/5"
                   }`}
                 >
 
                   <div className="flex items-center gap-4">
 
-                    <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
 
-                      <CreditCard className="w-6 h-6 text-purple-400" />
+                      <CreditCard className="w-6 h-6 text-emerald-400" />
 
                     </div>
 
@@ -451,7 +451,7 @@ function CheckoutContent() {
                       </>
                     ) : (
                       <>
-                        <div className="w-4 h-4 rounded-full border border-zinc-600 group-hover:border-purple-400 transition" />
+                        <div className="w-4 h-4 rounded-full border border-zinc-600 group-hover:border-emerald-400 transition" />
                         <span className="text-zinc-400 group-hover:text-zinc-200">Seleccionar Tarjeta</span>
                       </>
                     )}
@@ -463,13 +463,13 @@ function CheckoutContent() {
               </div>
 
               {/* MÉTODO SELECCIONADO */}
-              <div className="mt-6 p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 flex items-center justify-between">
+              <div className="mt-6 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between">
 
                 <div>
                   <p className="text-xs text-zinc-400">
                     Método de pago seleccionado
                   </p>
-                  <p className="text-lg font-bold text-purple-400 mt-0.5">
+                  <p className="text-lg font-bold text-emerald-400 mt-0.5">
                     {paymentMethod}
                   </p>
                 </div>
@@ -486,10 +486,10 @@ function CheckoutContent() {
                 <button
                   type="button"
                   onClick={irADatosPago}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/20 transition transform hover:scale-[1.01] cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold py-4 rounded-xl shadow-lg shadow-emerald-500/20 transition transform hover:scale-[1.01] cursor-pointer"
                 >
 
-                  <Lock className="w-5 h-5" />
+                  <Lock className="w-5 h-5 text-slate-950" />
 
                   Continuar con {paymentMethod}
 
@@ -524,9 +524,9 @@ export default function CheckoutPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+        <main className="min-h-screen bg-[#090d10] text-white flex items-center justify-center">
           <div className="text-center">
-            <Loader2 className="w-10 h-10 text-purple-400 animate-spin mx-auto mb-4" />
+            <Loader2 className="w-10 h-10 text-emerald-400 animate-spin mx-auto mb-4" />
             <p className="text-zinc-400">Cargando información del Beat...</p>
           </div>
         </main>
