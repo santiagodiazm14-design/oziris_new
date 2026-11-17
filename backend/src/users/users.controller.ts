@@ -25,7 +25,11 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorageWithPrefix, imageFileFilter, MB } from '../common/upload.utils';
+import {
+  diskStorageWithPrefix,
+  imageFileFilter,
+  MB,
+} from '../common/upload.utils';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -42,24 +46,37 @@ export class UsersController {
   // USER PROFILE ENDPOINTS
   @Patch('profile')
   @ApiOperation({ summary: 'Actualizar perfil del usuario autenticado' })
-  @ApiResponse({ status: 200, description: 'Perfil actualizado correctamente.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil actualizado correctamente.',
+  })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
   async updateProfile(@Request() req: any, @Body() body: UpdateProfileDto) {
     return this.usersService.updateProfile(req.user.id, body);
   }
 
   @Post('profile/avatar')
-  @ApiOperation({ summary: 'Subir foto de perfil (avatar)', description: 'Enviar como multipart/form-data con el campo "avatar".' })
+  @ApiOperation({
+    summary: 'Subir foto de perfil (avatar)',
+    description: 'Enviar como multipart/form-data con el campo "avatar".',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        avatar: { type: 'string', format: 'binary', description: 'Imagen JPG, PNG o WEBP' },
+        avatar: {
+          type: 'string',
+          format: 'binary',
+          description: 'Imagen JPG, PNG o WEBP',
+        },
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'Avatar subido y perfil actualizado.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Avatar subido y perfil actualizado.',
+  })
   @UseInterceptors(
     FileInterceptor('avatar', {
       storage: diskStorageWithPrefix('avatar-'),
@@ -74,17 +91,27 @@ export class UsersController {
   }
 
   @Post('profile/banner')
-  @ApiOperation({ summary: 'Subir banner del artista', description: 'Enviar como multipart/form-data con el campo "banner".' })
+  @ApiOperation({
+    summary: 'Subir banner del artista',
+    description: 'Enviar como multipart/form-data con el campo "banner".',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        banner: { type: 'string', format: 'binary', description: 'Imagen JPG, PNG o WEBP' },
+        banner: {
+          type: 'string',
+          format: 'binary',
+          description: 'Imagen JPG, PNG o WEBP',
+        },
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'Banner subido y perfil actualizado.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Banner subido y perfil actualizado.',
+  })
   @UseInterceptors(
     FileInterceptor('banner', {
       storage: diskStorageWithPrefix('banner-'),
@@ -101,7 +128,10 @@ export class UsersController {
   // FAVORITES ENDPOINTS
   @Get('favorites')
   @ApiOperation({ summary: 'Obtener beats favoritos del usuario autenticado' })
-  @ApiResponse({ status: 200, description: 'Lista de tracks marcados como favoritos.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de tracks marcados como favoritos.',
+  })
   async getFavorites(@Request() req: any) {
     return this.usersService.getUserFavorites(req.user.id);
   }
@@ -118,9 +148,17 @@ export class UsersController {
   @Get('stats')
   @UseGuards(RolesGuard)
   @Roles('ADMIN')
-  @ApiOperation({ summary: '[ADMIN] Obtener estadísticas generales del sistema' })
-  @ApiResponse({ status: 200, description: 'Estadísticas de usuarios, tracks y ventas.' })
-  @ApiResponse({ status: 403, description: 'Solo accesible por usuarios con rol ADMIN.' })
+  @ApiOperation({
+    summary: '[ADMIN] Obtener estadísticas generales del sistema',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estadísticas de usuarios, tracks y ventas.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Solo accesible por usuarios con rol ADMIN.',
+  })
   async getAdminStats() {
     return this.usersService.getAdminStats();
   }
@@ -129,7 +167,11 @@ export class UsersController {
   @UseGuards(RolesGuard)
   @Roles('ADMIN')
   @ApiOperation({ summary: '[ADMIN] Listar todos los usuarios' })
-  @ApiQuery({ name: 'search', required: false, description: 'Buscar por nombre o email' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Buscar por nombre o email',
+  })
   @ApiResponse({ status: 200, description: 'Lista de usuarios.' })
   @ApiResponse({ status: 403, description: 'Solo accesible por ADMIN.' })
   async findAll(@Query('search') search?: string) {

@@ -21,7 +21,10 @@ describe('UsersService', () => {
         count: jest.fn().mockResolvedValue(25),
       },
       purchase: {
-        aggregate: jest.fn().mockResolvedValue({ _count: { _all: 5 }, _sum: { amount: 1500.456 } }),
+        aggregate: jest.fn().mockResolvedValue({
+          _count: { _all: 5 },
+          _sum: { amount: 1500.456 },
+        }),
         findMany: jest.fn().mockResolvedValue([]),
         count: jest.fn().mockResolvedValue(5),
       },

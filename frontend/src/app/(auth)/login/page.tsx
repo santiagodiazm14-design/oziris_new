@@ -36,9 +36,9 @@ export default function LoginPage() {
       } else {
         router.push('/inicio');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Login error:', err);
-      setErrorMessage(err.message || 'Error al iniciar sesión. Comprueba tus credenciales.');
+      setErrorMessage((err as Error)?.message || 'Error al iniciar sesión. Comprueba tus credenciales.');
     } finally {
       setIsLoading(false);
     }

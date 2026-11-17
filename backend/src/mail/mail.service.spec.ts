@@ -3,13 +3,24 @@ import { MailService } from './mail.service';
 import * as nodemailer from 'nodemailer';
 
 jest.mock('nodemailer');
+// El servicio recarga el .env real en cada envío; lo aislamos para que el test
+// no dependa de las credenciales de correo configuradas en la máquina.
+jest.mock('dotenv', () => ({ config: jest.fn() }));
 
 describe('MailService', () => {
   let service: MailService;
   const mockSendMail = jest.fn();
+  const originalEnv = { ...process.env };
+
+  afterAll(() => {
+    process.env = originalEnv;
+  });
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    process.env.MAIL_USER = 'test@oziris.com';
+    process.env.MAIL_PASS = 'abcd efgh ijkl mnop';
+    delete process.env.MAIL_HOST;
     (nodemailer.createTransport as jest.Mock).mockReturnValue({
       sendMail: mockSendMail,
     });

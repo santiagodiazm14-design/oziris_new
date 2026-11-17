@@ -47,6 +47,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   useEffect(() => {
     if (isAuthenticated && token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- carga de datos desde la API al cambiar la sesión
       loadFavorites();
     } else {
       setFavorites([]);

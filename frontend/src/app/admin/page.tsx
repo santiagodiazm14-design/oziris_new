@@ -156,7 +156,7 @@ function AdminDashboardContent() {
         description={
           trackToDelete ? (
             <>
-              ¿Estás seguro de que deseas eliminar el Beat <strong className="text-white">"{trackToDelete.title}"</strong> del catálogo de OZIRIS?
+              ¿Estás seguro de que deseas eliminar el Beat <strong className="text-white">&ldquo;{trackToDelete.title}&rdquo;</strong> del catálogo de OZIRIS?
             </>
           ) : null
         }

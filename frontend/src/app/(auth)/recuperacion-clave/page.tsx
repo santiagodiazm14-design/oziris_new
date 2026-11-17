@@ -41,8 +41,8 @@ export default function ForgotPasswordPage() {
       setInfoMessage(res.message || 'Código enviado a tu correo.');
       setCooldown(30);
       setStep(2);
-    } catch (err: any) {
-      setError(err.message || 'Error al solicitar el código de recuperación.');
+    } catch (err) {
+      setError((err as Error)?.message || 'Error al solicitar el código de recuperación.');
     } finally {
       setIsLoading(false);
     }
@@ -56,8 +56,8 @@ export default function ForgotPasswordPage() {
       const res = await forgotPasswordApi(email.trim());
       setInfoMessage('Se ha enviado un nuevo código a tu correo.');
       setCooldown(30);
-    } catch (err: any) {
-      setError(err.message || 'No se pudo reenviar el código. Intenta de nuevo.');
+    } catch (err) {
+      setError((err as Error)?.message || 'No se pudo reenviar el código. Intenta de nuevo.');
     } finally {
       setIsLoading(false);
     }
@@ -76,8 +76,8 @@ export default function ForgotPasswordPage() {
     try {
       await verifyResetCodeApi(email.trim(), cleanCode);
       setStep(3);
-    } catch (err: any) {
-      setError(err.message || 'Código incorrecto o expirado.');
+    } catch (err) {
+      setError((err as Error)?.message || 'Código incorrecto o expirado.');
     } finally {
       setIsLoading(false);
     }
@@ -100,8 +100,8 @@ export default function ForgotPasswordPage() {
     try {
       await resetPasswordApi(email.trim(), code.trim(), newPassword);
       setStep(4);
-    } catch (err: any) {
-      setError(err.message || 'Error al restablecer la contraseña.');
+    } catch (err) {
+      setError((err as Error)?.message || 'Error al restablecer la contraseña.');
     } finally {
       setIsLoading(false);
     }

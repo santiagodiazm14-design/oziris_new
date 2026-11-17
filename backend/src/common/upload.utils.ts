@@ -20,7 +20,10 @@ export function diskStorageWithPrefix(prefix = '') {
   return diskStorage({
     destination: './uploads',
     filename: (_req, file, cb) => {
-      cb(null, `${prefix}${randomBytes(12).toString('hex')}${extname(file.originalname).toLowerCase()}`);
+      cb(
+        null,
+        `${prefix}${randomBytes(12).toString('hex')}${extname(file.originalname).toLowerCase()}`,
+      );
     },
   });
 }

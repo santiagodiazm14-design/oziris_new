@@ -25,7 +25,11 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { diskStorageWithPrefix, trackFileFilter, MB } from '../common/upload.utils';
+import {
+  diskStorageWithPrefix,
+  trackFileFilter,
+  MB,
+} from '../common/upload.utils';
 import { unlink } from 'fs';
 import { TracksService } from './tracks.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -40,14 +44,51 @@ export class TracksController {
   constructor(private readonly tracksService: TracksService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar y filtrar beats', description: 'Devuelve todos los beats con soporte de filtros opcionales.' })
-  @ApiQuery({ name: 'genre', required: false, example: 'Trap', description: 'Filtrar por género' })
-  @ApiQuery({ name: 'search', required: false, example: 'dark', description: 'Búsqueda por texto (título, descripción, tags)' })
-  @ApiQuery({ name: 'tag', required: false, example: 'melodic', description: 'Filtrar por tag' })
-  @ApiQuery({ name: 'maxPrice', required: false, example: 50, description: 'Precio máximo en USD' })
-  @ApiQuery({ name: 'category', required: false, example: 'beats', description: 'Filtrar por categoría' })
-  @ApiQuery({ name: 'producerId', required: false, description: 'Filtrar por ID del productor' })
-  @ApiQuery({ name: 'sort', required: false, enum: ['price_asc', 'price_desc', 'newest', 'popular'], description: 'Criterio de ordenamiento' })
+  @ApiOperation({
+    summary: 'Listar y filtrar beats',
+    description: 'Devuelve todos los beats con soporte de filtros opcionales.',
+  })
+  @ApiQuery({
+    name: 'genre',
+    required: false,
+    example: 'Trap',
+    description: 'Filtrar por género',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    example: 'dark',
+    description: 'Búsqueda por texto (título, descripción, tags)',
+  })
+  @ApiQuery({
+    name: 'tag',
+    required: false,
+    example: 'melodic',
+    description: 'Filtrar por tag',
+  })
+  @ApiQuery({
+    name: 'maxPrice',
+    required: false,
+    example: 50,
+    description: 'Precio máximo en USD',
+  })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    example: 'beats',
+    description: 'Filtrar por categoría',
+  })
+  @ApiQuery({
+    name: 'producerId',
+    required: false,
+    description: 'Filtrar por ID del productor',
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    enum: ['price_asc', 'price_desc', 'newest', 'popular'],
+    description: 'Criterio de ordenamiento',
+  })
   @ApiResponse({ status: 200, description: 'Lista de tracks.' })
   async findAll(
     @Query('genre') genre?: string,
@@ -84,7 +125,8 @@ export class TracksController {
   @ApiBearerAuth('JWT-Auth')
   @ApiOperation({
     summary: 'Subir un nuevo beat',
-    description: 'Requiere autenticación JWT. Enviar como `multipart/form-data` con los archivos de audio y portada.',
+    description:
+      'Requiere autenticación JWT. Enviar como `multipart/form-data` con los archivos de audio y portada.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -92,15 +134,39 @@ export class TracksController {
       type: 'object',
       required: ['title', 'price'],
       properties: {
-        title:       { type: 'string',  example: 'Dark Night Trap',          description: 'Título del beat' },
-        description: { type: 'string',  example: 'Beat oscuro con 808s',      description: 'Descripción' },
-        price:       { type: 'number',  example: 29.99,                       description: 'Precio en USD' },
-        genre:       { type: 'string',  example: 'Trap',                      description: 'Género musical' },
-        bpm:         { type: 'integer', example: 140,                         description: 'Beats por minuto' },
-        key:         { type: 'string',  example: 'Am',                        description: 'Tonalidad' },
-        tags:        { type: 'string',  example: 'dark,808,melodic',          description: 'Tags separados por coma' },
-        audio:       { type: 'string',  format: 'binary',                     description: 'Archivo de audio (MP3/WAV)' },
-        cover:       { type: 'string',  format: 'binary',                     description: 'Imagen de portada (JPG/PNG)' },
+        title: {
+          type: 'string',
+          example: 'Dark Night Trap',
+          description: 'Título del beat',
+        },
+        description: {
+          type: 'string',
+          example: 'Beat oscuro con 808s',
+          description: 'Descripción',
+        },
+        price: { type: 'number', example: 29.99, description: 'Precio en USD' },
+        genre: {
+          type: 'string',
+          example: 'Trap',
+          description: 'Género musical',
+        },
+        bpm: { type: 'integer', example: 140, description: 'Beats por minuto' },
+        key: { type: 'string', example: 'Am', description: 'Tonalidad' },
+        tags: {
+          type: 'string',
+          example: 'dark,808,melodic',
+          description: 'Tags separados por coma',
+        },
+        audio: {
+          type: 'string',
+          format: 'binary',
+          description: 'Archivo de audio (MP3/WAV)',
+        },
+        cover: {
+          type: 'string',
+          format: 'binary',
+          description: 'Imagen de portada (JPG/PNG)',
+        },
       },
     },
   })
@@ -147,10 +213,19 @@ export class TracksController {
     const title = typeof body?.title === 'string' ? body.title.trim() : '';
     if (!title || title.length > 150) {
       discardUploads();
-      throw new BadRequestException('El título es obligatorio (máx. 150 caracteres).');
+      throw new BadRequestException(
+        'El título es obligatorio (máx. 150 caracteres).',
+      );
     }
-    const parsedPrice = body?.price !== undefined && body?.price !== '' ? Number(body.price) : 29.99;
-    if (!Number.isFinite(parsedPrice) || parsedPrice < 0 || parsedPrice > 100000) {
+    const parsedPrice =
+      body?.price !== undefined && body?.price !== ''
+        ? Number(body.price)
+        : 29.99;
+    if (
+      !Number.isFinite(parsedPrice) ||
+      parsedPrice < 0 ||
+      parsedPrice > 100000
+    ) {
       discardUploads();
       throw new BadRequestException('El precio no es válido.');
     }
@@ -194,7 +269,10 @@ export class TracksController {
   @ApiOperation({ summary: 'Editar un beat (dueño o ADMIN)' })
   @ApiParam({ name: 'id', description: 'ID del track a editar' })
   @ApiResponse({ status: 200, description: 'Beat actualizado.' })
-  @ApiResponse({ status: 403, description: 'Solo el dueño del beat o un ADMIN pueden editarlo.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Solo el dueño del beat o un ADMIN pueden editarlo.',
+  })
   async update(
     @Request() req: any,
     @Param('id') id: string,
@@ -222,14 +300,19 @@ export class TracksController {
   @ApiParam({ name: 'id', description: 'ID del track a eliminar' })
   @ApiResponse({ status: 200, description: 'Beat eliminado.' })
   @ApiResponse({ status: 404, description: 'Beat no encontrado.' })
-  @ApiResponse({ status: 403, description: 'Solo el dueño del beat o un ADMIN pueden eliminarlo.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Solo el dueño del beat o un ADMIN pueden eliminarlo.',
+  })
   async remove(
     @Request() req: any,
     @Param('id') id: string,
   ): Promise<{ success: boolean }> {
     const track = await this.tracksService.findOne(id);
     if (req.user.role !== 'ADMIN' && track.producerId !== req.user.id) {
-      throw new ForbiddenException('No puedes eliminar un beat que no es tuyo.');
+      throw new ForbiddenException(
+        'No puedes eliminar un beat que no es tuyo.',
+      );
     }
     return this.tracksService.remove(id);
   }

@@ -252,7 +252,12 @@ describe('AuthService', () => {
         email: 'a@b.co',
         password: hashed,
       });
-      const res = await authService.changePassword('u1', 'a@b.co', 'Actual123!', 'Nueva456!');
+      const res = await authService.changePassword(
+        'u1',
+        'a@b.co',
+        'Actual123!',
+        'Nueva456!',
+      );
       expect(res.message).toMatch(/actualizada/i);
       expect(prismaService.user.update).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: 'u1' } }),
