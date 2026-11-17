@@ -49,6 +49,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const queueRef = useRef(queue);
   const queueIndexRef = useRef(queueIndex);
   const prevVolumeRef = useRef<number>(0.8);
+  // Siempre apunta a la versión más reciente de playTrack, para que nextTrack/prevTrack
+  // (creados una sola vez) no usen una versión con estado desactualizado.
+  const playTrackRef = useRef<(track: Track, playlist?: Track[]) => void>(() => {});
 
   // Keep refs in sync
   useEffect(() => {
@@ -83,11 +86,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (nextIdx < q.length) {
       const next = q[nextIdx];
       setQueueIndex(nextIdx);
-      playTrack(next, q);
+      playTrackRef.current(next, q);
     } else {
       if (q.length > 1) {
         setQueueIndex(0);
-        playTrack(q[0], q);
+        playTrackRef.current(q[0], q);
       } else {
         setIsPlaying(false);
         setCurrentTime(0);
@@ -108,7 +111,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (prevIdx >= 0) {
       const prev = q[prevIdx];
       setQueueIndex(prevIdx);
-      playTrack(prev, q);
+      playTrackRef.current(prev, q);
     } else {
       if (audioRef.current) {
         audioRef.current.currentTime = 0;
@@ -174,6 +177,25 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [volume, isMuted]);
 
+  const togglePlay = () => {
+    if (!audioRef.current || !currentTrack) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch((err) => {
+          console.error("Audio resume error:", err);
+          setIsPlaying(false);
+        });
+    }
+  };
+
   const playTrack = (track: Track, playlist?: Track[]) => {
     if (!audioRef.current) return;
     setAudioError(null);
@@ -215,24 +237,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
   };
 
-  const togglePlay = () => {
-    if (!audioRef.current || !currentTrack) return;
-
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current
-        .play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch((err) => {
-          console.error("Audio resume error:", err);
-          setIsPlaying(false);
-        });
-    }
-  };
+  useEffect(() => {
+    playTrackRef.current = playTrack;
+  });
 
   const pause = () => {
     if (audioRef.current && isPlaying) {

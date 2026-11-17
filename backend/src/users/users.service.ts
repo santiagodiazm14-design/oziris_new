@@ -210,9 +210,7 @@ export class UsersService {
             create: {
               ...artistFields,
               artisticName:
-                artistFields.artisticName ||
-                updated.artistName ||
-                updated.name,
+                artistFields.artisticName || updated.artistName || updated.name,
               userId,
             },
           });
@@ -280,7 +278,8 @@ export class UsersService {
         if (updated.role === 'PRODUCER') {
           const artist = await this.prisma.artist.upsert({
             where: { userId: id },
-            update: data.verified !== undefined ? { verified: data.verified } : {},
+            update:
+              data.verified !== undefined ? { verified: data.verified } : {},
             create: {
               artisticName: updated.artistName || updated.name,
               verified: data.verified ?? false,

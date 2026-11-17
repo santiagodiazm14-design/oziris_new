@@ -41,7 +41,7 @@ export function useAdminDashboard(token: string | null) {
       setIsLoadingStats(true);
       const data = await fetchAdminStats(token);
       setStats(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching admin stats:', err);
     } finally {
       setIsLoadingStats(false);
@@ -54,9 +54,9 @@ export function useAdminDashboard(token: string | null) {
       setIsLoadingUsers(true);
       const data = await fetchAdminUsers(token, userSearch);
       setUsers(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching admin users:', err);
-      showNotification('error', err.message || 'Error al obtener lista de usuarios.');
+      showNotification('error', (err as Error)?.message || 'Error al obtener lista de usuarios.');
     } finally {
       setIsLoadingUsers(false);
     }
@@ -67,7 +67,7 @@ export function useAdminDashboard(token: string | null) {
       setIsLoadingTracks(true);
       const data = await fetchTracks();
       setTracks(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching tracks:', err);
     } finally {
       setIsLoadingTracks(false);
@@ -82,6 +82,7 @@ export function useAdminDashboard(token: string | null) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga de datos desde la API al cambiar el token
     loadStats();
     loadUsers();
     loadTracksData();
@@ -104,8 +105,8 @@ export function useAdminDashboard(token: string | null) {
       showNotification('success', `Usuario ${userToToggle.name} ${nextStatus ? 'activado' : 'desactivado'}.`);
       loadUsers();
       loadStats();
-    } catch (err: any) {
-      showNotification('error', err.message || 'Error al cambiar estado.');
+    } catch (err) {
+      showNotification('error', (err as Error)?.message || 'Error al cambiar estado.');
     }
   };
 
@@ -116,8 +117,8 @@ export function useAdminDashboard(token: string | null) {
       showNotification('success', `Rol de ${userToChange.name} cambiado a ${nextRole}.`);
       loadUsers();
       loadStats();
-    } catch (err: any) {
-      showNotification('error', err.message || 'Error al cambiar rol.');
+    } catch (err) {
+      showNotification('error', (err as Error)?.message || 'Error al cambiar rol.');
     }
   };
 
@@ -128,8 +129,8 @@ export function useAdminDashboard(token: string | null) {
       await updateAdminUser(token, artistUser.id, { verified: next });
       showNotification('success', `${artistUser.artistName || artistUser.name} ${next ? 'verificado' : 'sin verificar'}.`);
       loadUsers();
-    } catch (err: any) {
-      showNotification('error', err.message || 'Error al cambiar verificación.');
+    } catch (err) {
+      showNotification('error', (err as Error)?.message || 'Error al cambiar verificación.');
     }
   };
 
@@ -141,8 +142,8 @@ export function useAdminDashboard(token: string | null) {
       setUserToDelete(null);
       loadUsers();
       loadStats();
-    } catch (err: any) {
-      showNotification('error', err.message || 'Error al eliminar usuario.');
+    } catch (err) {
+      showNotification('error', (err as Error)?.message || 'Error al eliminar usuario.');
     }
   };
 
@@ -154,8 +155,8 @@ export function useAdminDashboard(token: string | null) {
       setTrackToDelete(null);
       loadTracksData();
       loadStats();
-    } catch (err: any) {
-      showNotification('error', err.message || 'Error al eliminar Beat.');
+    } catch (err) {
+      showNotification('error', (err as Error)?.message || 'Error al eliminar Beat.');
     }
   };
 

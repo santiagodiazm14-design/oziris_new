@@ -183,6 +183,7 @@ export default function InicioPage() {
   }, [searchQuery, selectedGenre, selectedCategory, selectedTag, selectedSort]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga de compras desde la API al cambiar la sesión
     loadUserPurchases();
   }, [token, isAuthenticated, isAdmin]);
 
@@ -207,8 +208,8 @@ export default function InicioPage() {
     try {
       setDownloadingTrackId(track.id);
       await downloadBeatFile(token, track.id, track.title);
-    } catch (err: any) {
-      setAudioError(err.message || "Error al descargar el Beat.");
+    } catch (err) {
+      setAudioError((err as Error)?.message || "Error al descargar el Beat.");
     } finally {
       setDownloadingTrackId(null);
     }

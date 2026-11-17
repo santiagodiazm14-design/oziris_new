@@ -17,7 +17,7 @@ export interface SimulatePaymentPayload {
   cardHolder?: string;
   cardLastFour?: string;
   phoneNumber?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 /**

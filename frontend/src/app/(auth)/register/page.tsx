@@ -68,9 +68,9 @@ export default function RegisterPage() {
 
       register(res.access_token, res.user);
       router.push('/inicio');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Register error:', err);
-      setErrorMessage(err.message || 'Error al registrar la cuenta.');
+      setErrorMessage((err as Error)?.message || 'Error al registrar la cuenta.');
     } finally {
       setIsLoading(false);
     }
