@@ -63,6 +63,9 @@ model Track {
   createdAt    DateTime @default(now()) @map("creado_en")
   updatedAt    DateTime @updatedAt @map("actualizado_en")
 
+  @@index([producerId])
+  @@index([genre])
+  @@index([createdAt])
   @@map("pistas")
 }
 
@@ -96,6 +99,8 @@ model Purchase {
   createdAt       DateTime @default(now()) @map("creado_en")
   updatedAt       DateTime @default(now()) @updatedAt @map("actualizado_en")
 
+  @@index([userId, trackId])
+  @@index([trackId])
   @@map("compras")
 }
 
@@ -131,6 +136,7 @@ model PaymentSimulation {
   createdAt     DateTime @default(now()) @map("creado_en")
   updatedAt     DateTime @default(now()) @updatedAt @map("actualizado_en")
 
+  @@index([userId])
   @@map("simulaciones_pago")
 }
 
@@ -153,6 +159,8 @@ model DownloadLog {
 
   downloadedAt DateTime @default(now()) @map("descargado_en")
 
+  @@index([userId])
+  @@index([trackId])
   @@map("registros_descargas")
 }
 
@@ -181,6 +189,7 @@ model Favorite {
   createdAt DateTime @default(now()) @map("creado_en")
 
   @@unique([userId, trackId])
+  @@index([trackId])
   @@map("favoritos")
 }
 
@@ -209,6 +218,7 @@ model PasswordReset {
 
   @@index([email])
   @@index([code])
+  @@index([userId])
   @@map("restablecimiento_contrasenas")
 }
 

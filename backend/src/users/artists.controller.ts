@@ -11,7 +11,10 @@ export class ArtistsController {
   @Get(':id')
   @ApiOperation({ summary: 'Perfil público de un artista/productor' })
   @ApiParam({ name: 'id', description: 'ID del usuario productor' })
-  @ApiResponse({ status: 200, description: 'Datos públicos del artista y sus estadísticas.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Datos públicos del artista y sus estadísticas.',
+  })
   @ApiResponse({ status: 404, description: 'Artista no encontrado.' })
   async getPublicProfile(@Param('id') id: string) {
     return this.usersService.getPublicArtist(id);

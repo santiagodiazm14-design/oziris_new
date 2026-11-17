@@ -1,9 +1,20 @@
 import { BadRequestException } from '@nestjs/common';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { randomBytes } from 'crypto';
 
 export const MB = 1024 * 1024;
+
+const MIME_EXT: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'audio/mpeg': '.mp3',
+  'audio/mp3': '.mp3',
+  'audio/wav': '.wav',
+  'audio/x-wav': '.wav',
+  'audio/wave': '.wav',
+  'audio/vnd.wave': '.wav',
+};
 
 const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
 const AUDIO_MIMES = [
@@ -20,7 +31,10 @@ export function diskStorageWithPrefix(prefix = '') {
   return diskStorage({
     destination: './uploads',
     filename: (_req, file, cb) => {
-      cb(null, `${prefix}${randomBytes(12).toString('hex')}${extname(file.originalname).toLowerCase()}`);
+      // La extensión sale del MIME validado, no del nombre enviado por el
+      // cliente (evita subir .html/.svg con un Content-Type falso → XSS).
+      const ext = MIME_EXT[file.mimetype] ?? '';
+      cb(null, `${prefix}${randomBytes(12).toString('hex')}${ext}`);
     },
   });
 }
@@ -59,4 +73,16 @@ export function trackFileFilter(
     );
   }
   cb(null, true);
+}
+
+/** Acepta rutas /uploads/<archivo> o URLs http(s); rechaza cualquier otra cosa. */
+export function isSafeMediaUrl(v: unknown): v is string {
+  if (typeof v !== 'string' || v.length === 0 || v.length > 500) return false;
+  if (/^\/uploads\/[A-Za-z0-9._-]+$/.test(v) && !v.includes('..')) return true;
+  try {
+    const u = new URL(v);
+    return u.protocol === 'https:' || u.protocol === 'http:';
+  } catch {
+    return false;
+  }
 }

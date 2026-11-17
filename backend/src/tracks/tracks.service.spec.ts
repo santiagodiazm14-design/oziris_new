@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TracksService } from './tracks.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 describe('TracksService', () => {
   let service: TracksService;
@@ -9,6 +9,7 @@ describe('TracksService', () => {
 
   beforeEach(async () => {
     prismaService = {
+      user: { findUnique: jest.fn() },
       track: {
         findMany: jest.fn(),
         findUnique: jest.fn(),
@@ -48,25 +49,33 @@ describe('TracksService', () => {
       expect(result[0].title).toBe('Nightfall Trap');
     });
 
-    it('debe usar fallback en memoria si la base de datos falla', async () => {
+    it('propaga el error si la base de datos falla (no inventa datos)', async () => {
       prismaService.track.findMany.mockRejectedValue(
         new Error('DB Connection Failed'),
       );
-
-      const result = await service.findAll();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeGreaterThan(0);
+      await expect(service.findAll()).rejects.toThrow('DB Connection Failed');
     });
 
-    it('debe filtrar en memoria por género correctamente', async () => {
-      prismaService.track.findMany.mockRejectedValue(
-        new Error('DB Connection Failed'),
+    it('limita la cantidad de resultados por consulta', async () => {
+      prismaService.track.findMany.mockResolvedValue([]);
+      await service.findAll({ limit: 99999 });
+      expect(prismaService.track.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 200 }),
       );
+    });
 
-      const result = await service.findAll({ genre: 'Trap' });
-      result.forEach((t) => {
-        expect(t.genre?.toLowerCase()).toBe('trap');
-      });
+    it('no expone el correo del productor', async () => {
+      prismaService.track.findMany.mockResolvedValue([
+        {
+          id: 't-1',
+          title: 'X',
+          price: 1,
+          audioUrl: '/uploads/a.mp3',
+          producer: { id: 'p', name: 'P', email: 'secreto@mail.com' },
+        },
+      ]);
+      const [t] = await service.findAll();
+      expect((t.producer as any).email).toBeUndefined();
     });
   });
 
@@ -103,6 +112,13 @@ describe('TracksService', () => {
         producerId: 'prod-uuid-1',
       };
 
+      prismaService.user.findUnique.mockResolvedValue({
+        id: 'prod-uuid-1',
+        role: 'PRODUCER',
+        isActive: true,
+        artist: null,
+        avatarUrl: null,
+      });
       prismaService.track.create.mockResolvedValue({
         id: 't-created-1',
         ...newTrackData,
@@ -118,6 +134,33 @@ describe('TracksService', () => {
       const result = await service.create(newTrackData);
       expect(result).toHaveProperty('id');
       expect(result.title).toBe('Cyberpunk Synth');
+    });
+  });
+
+  describe('create (permisos)', () => {
+    it('rechaza a un USER sin perfil de artista', async () => {
+      prismaService.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        role: 'USER',
+        isActive: true,
+        artist: null,
+      });
+      await expect(
+        service.create({ title: 'x', price: 1, producerId: 'u1' }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(prismaService.track.create).not.toHaveBeenCalled();
+    });
+
+    it('rechaza una cuenta desactivada', async () => {
+      prismaService.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        role: 'PRODUCER',
+        isActive: false,
+        artist: null,
+      });
+      await expect(
+        service.create({ title: 'x', price: 1, producerId: 'u1' }),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -151,7 +194,7 @@ describe('TracksService', () => {
     });
 
     it('lanza NotFound si el beat no existe', async () => {
-      prismaService.track.update.mockRejectedValue(new Error('not found'));
+      prismaService.track.update.mockRejectedValue({ code: 'P2025' });
       await expect(service.update('nope', { price: 1 })).rejects.toThrow(
         NotFoundException,
       );

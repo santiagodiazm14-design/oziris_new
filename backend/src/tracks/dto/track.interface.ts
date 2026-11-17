@@ -1,7 +1,7 @@
 export interface TrackProducer {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   avatarUrl?: string | null;
   artistName?: string | null;
 }

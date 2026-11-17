@@ -4,84 +4,51 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import { UserResponse, ArtistResponse } from './dto';
-import { INITIAL_USERS } from './mock-users.data';
+import { rethrowPrisma } from '../common/prisma-errors';
 
 export type { UserResponse, ArtistResponse };
 
 @Injectable()
 export class UsersService {
-  private inMemoryUsers = [...INITIAL_USERS];
-  private inMemoryFavorites: { id: string; userId: string; trackId: string }[] =
-    [];
-
   constructor(private prisma: PrismaService) {}
 
   async findAll(search?: string): Promise<UserResponse[]> {
-    try {
-      const dbUsers = await this.prisma.user.findMany({
-        where: search
-          ? {
-              OR: [
-                { name: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } },
-                { artistName: { contains: search, mode: 'insensitive' } },
-              ],
-            }
-          : undefined,
-        include: { artist: true },
-        orderBy: { createdAt: 'desc' },
-      });
-      if (dbUsers && dbUsers.length > 0) {
-        return dbUsers.map((u) => this.sanitizeUser(u));
-      }
-    } catch (e) {
-      // Fallback
-    }
-
-    let filtered = this.inMemoryUsers;
-    if (search) {
-      const q = search.toLowerCase();
-      filtered = filtered.filter(
-        (u) =>
-          u.name.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q) ||
-          (u.artistName && u.artistName.toLowerCase().includes(q)),
-      );
-    }
-    return filtered.map((u) => this.sanitizeUser(u));
+    const q = search?.trim().slice(0, 100);
+    const dbUsers = await this.prisma.user.findMany({
+      where: q
+        ? {
+            OR: [
+              { name: { contains: q, mode: 'insensitive' } },
+              { email: { contains: q, mode: 'insensitive' } },
+              { artistName: { contains: q, mode: 'insensitive' } },
+            ],
+          }
+        : undefined,
+      include: { artist: true },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+    return dbUsers.map((u) => this.sanitizeUser(u));
   }
 
   async findById(id: string): Promise<UserResponse> {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id },
-        include: { artist: true },
-      });
-      if (user) return this.sanitizeUser(user);
-    } catch (e) {
-      // Fallback
-    }
-
-    const user = this.inMemoryUsers.find((u) => u.id === id);
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { artist: true },
+    });
     if (!user) {
-      throw new NotFoundException(`Usuario con ID ${id} no encontrado.`);
+      throw new NotFoundException('Usuario no encontrado.');
     }
     return this.sanitizeUser(user);
   }
 
+  /** Busca por correo (normalizado a minúsculas). Incluye el hash de contraseña. */
   async findByEmailWithPassword(email: string) {
-    try {
-      const user = await this.prisma.user.findUnique({ where: { email } });
-      if (user) return user;
-    } catch (e) {
-      // Fallback
-    }
-
-    return this.inMemoryUsers.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase(),
-    );
+    return this.prisma.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+    });
   }
 
   async createUser(data: {
@@ -92,13 +59,7 @@ export class UsersService {
     artisticName?: string;
     genre?: string;
   }) {
-    const existing = await this.findByEmailWithPassword(data.email);
-    if (existing) {
-      throw new ConflictException(
-        'El correo electrónico ya se encuentra registrado.',
-      );
-    }
-
+    const email = data.email.trim().toLowerCase();
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const assignedRole =
       data.role === 'ADMIN'
@@ -107,52 +68,39 @@ export class UsersService {
           ? 'PRODUCER'
           : 'USER';
     const isArtist = assignedRole === 'PRODUCER';
-    const finalArtistName = isArtist
-      ? data.artisticName?.trim() || data.name.trim()
-      : null;
-
-    const newUser = {
-      id: `user-${Date.now()}`,
-      name: data.name,
-      email: data.email,
-      password: hashedPassword,
-      artistName: finalArtistName,
-      role: assignedRole as any,
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    const name = data.name.trim();
+    const finalArtistName = isArtist ? data.artisticName?.trim() || name : null;
 
     try {
       const dbUser = await this.prisma.user.create({
         data: {
-          ...newUser,
+          name,
+          email,
+          password: hashedPassword,
+          artistName: finalArtistName,
+          role: assignedRole as any,
           artist: isArtist
             ? {
                 create: {
-                  artisticName: finalArtistName || data.name.trim(),
+                  artisticName: finalArtistName || name,
                   genre: data.genre?.trim() || null,
                   verified: false,
                 },
               }
             : undefined,
         },
-        include: {
-          artist: true,
-        },
+        include: { artist: true },
       });
       return this.sanitizeUser(dbUser);
     } catch (e) {
-      // Fallback
+      // La restricción UNIQUE de la BD es la fuente de verdad (sin carreras)
+      if ((e as { code?: string })?.code === 'P2002') {
+        throw new ConflictException(
+          'El correo electrónico ya se encuentra registrado.',
+        );
+      }
+      throw e;
     }
-
-    const memoryUser = {
-      ...newUser,
-      createdAt: newUser.createdAt.toISOString(),
-      updatedAt: newUser.updatedAt.toISOString(),
-    };
-    this.inMemoryUsers.unshift(memoryUser);
-    return this.sanitizeUser(memoryUser);
   }
 
   async updateProfile(
@@ -184,66 +132,41 @@ export class UsersService {
         },
         include: { artist: true },
       });
-      if (updated) {
-        const hasArtistData = [
-          data.artistName,
-          data.bio,
-          data.genre,
-          data.bannerUrl,
-          data.spotifyUrl,
-          data.instagramUrl,
-          data.youtubeUrl,
-        ].some((v) => v !== undefined);
-        if (updated.role === 'PRODUCER' && hasArtistData) {
-          const artistFields = {
-            artisticName: data.artistName?.trim() || undefined,
-            bio: data.bio,
-            genre: data.genre,
-            bannerUrl: data.bannerUrl,
-            spotifyUrl: data.spotifyUrl,
-            instagramUrl: data.instagramUrl,
-            youtubeUrl: data.youtubeUrl,
-          };
-          const artist = await this.prisma.artist.upsert({
-            where: { userId },
-            update: artistFields,
-            create: {
-              ...artistFields,
-              artisticName:
-                artistFields.artisticName ||
-                updated.artistName ||
-                updated.name,
-              userId,
-            },
-          });
-          return this.sanitizeUser({ ...updated, artist });
-        }
-        return this.sanitizeUser(updated);
+      const hasArtistData = [
+        data.artistName,
+        data.bio,
+        data.genre,
+        data.bannerUrl,
+        data.spotifyUrl,
+        data.instagramUrl,
+        data.youtubeUrl,
+      ].some((v) => v !== undefined);
+      if (updated.role === 'PRODUCER' && hasArtistData) {
+        const artistFields = {
+          artisticName: data.artistName?.trim() || undefined,
+          bio: data.bio,
+          genre: data.genre,
+          bannerUrl: data.bannerUrl,
+          spotifyUrl: data.spotifyUrl,
+          instagramUrl: data.instagramUrl,
+          youtubeUrl: data.youtubeUrl,
+        };
+        const artist = await this.prisma.artist.upsert({
+          where: { userId },
+          update: artistFields,
+          create: {
+            ...artistFields,
+            artisticName:
+              artistFields.artisticName || updated.artistName || updated.name,
+            userId,
+          },
+        });
+        return this.sanitizeUser({ ...updated, artist });
       }
+      return this.sanitizeUser(updated);
     } catch (e) {
-      // Fallback
+      rethrowPrisma(e, 'Usuario no encontrado.');
     }
-
-    const index = this.inMemoryUsers.findIndex((u) => u.id === userId);
-    if (index === -1) {
-      throw new NotFoundException('Usuario no encontrado.');
-    }
-
-    const current = this.inMemoryUsers[index];
-    const updatedMemory = {
-      ...current,
-      name: data.name !== undefined ? data.name : current.name,
-      lastName: data.lastName !== undefined ? data.lastName : current.lastName,
-      artistName:
-        data.artistName !== undefined ? data.artistName : current.artistName,
-      location: data.location !== undefined ? data.location : current.location,
-      bio: data.bio !== undefined ? data.bio : current.bio,
-      avatarUrl:
-        data.avatarUrl !== undefined ? data.avatarUrl : current.avatarUrl,
-      updatedAt: new Date().toISOString(),
-    };
-    this.inMemoryUsers[index] = updatedMemory;
-    return this.sanitizeUser(updatedMemory);
   }
 
   async updateUser(
@@ -275,187 +198,119 @@ export class UsersService {
         },
         include: { artist: true },
       });
-      if (updated) {
-        // Un PRODUCER siempre debe tener su ficha de artista.
-        if (updated.role === 'PRODUCER') {
-          const artist = await this.prisma.artist.upsert({
-            where: { userId: id },
-            update: data.verified !== undefined ? { verified: data.verified } : {},
-            create: {
-              artisticName: updated.artistName || updated.name,
-              verified: data.verified ?? false,
-              userId: id,
-            },
-          });
-          return this.sanitizeUser({ ...updated, artist });
-        }
-        return this.sanitizeUser(updated);
+      // Un PRODUCER siempre debe tener su ficha de artista.
+      if (updated.role === 'PRODUCER') {
+        const artist = await this.prisma.artist.upsert({
+          where: { userId: id },
+          update:
+            data.verified !== undefined ? { verified: data.verified } : {},
+          create: {
+            artisticName: updated.artistName || updated.name,
+            verified: data.verified ?? false,
+            userId: id,
+          },
+        });
+        return this.sanitizeUser({ ...updated, artist });
       }
+      return this.sanitizeUser(updated);
     } catch (e) {
-      // Fallback
+      rethrowPrisma(e, `Usuario con ID ${id} no encontrado.`);
     }
-
-    const index = this.inMemoryUsers.findIndex((u) => u.id === id);
-    if (index === -1) {
-      throw new NotFoundException(`Usuario con ID ${id} no encontrado.`);
-    }
-
-    const current = this.inMemoryUsers[index];
-    const updatedMemory = {
-      ...current,
-      name: data.name !== undefined ? data.name : current.name,
-      lastName: data.lastName !== undefined ? data.lastName : current.lastName,
-      artistName:
-        data.artistName !== undefined ? data.artistName : current.artistName,
-      location: data.location !== undefined ? data.location : current.location,
-      role: data.role !== undefined ? data.role : current.role,
-      isActive: data.isActive !== undefined ? data.isActive : current.isActive,
-      bio: data.bio !== undefined ? data.bio : current.bio,
-      avatarUrl:
-        data.avatarUrl !== undefined ? data.avatarUrl : current.avatarUrl,
-      updatedAt: new Date().toISOString(),
-    };
-    this.inMemoryUsers[index] = updatedMemory;
-    return this.sanitizeUser(updatedMemory);
   }
 
   async deleteUser(id: string): Promise<{ success: boolean; message: string }> {
     try {
       await this.prisma.user.delete({ where: { id } });
     } catch (e) {
-      // Fallback
-    }
-
-    const index = this.inMemoryUsers.findIndex((u) => u.id === id);
-    if (index !== -1) {
-      this.inMemoryUsers.splice(index, 1);
+      rethrowPrisma(e, 'Usuario no encontrado.');
     }
     return { success: true, message: 'Usuario eliminado correctamente.' };
   }
 
   // FAVORITES
   async toggleFavorite(userId: string, trackId: string) {
-    try {
-      const existing = await this.prisma.favorite.findUnique({
-        where: { userId_trackId: { userId, trackId } },
-      });
+    const track = await this.prisma.track.findUnique({
+      where: { id: trackId },
+      select: { id: true },
+    });
+    if (!track) throw new NotFoundException('Beat no encontrado.');
 
-      if (existing) {
-        await this.prisma.favorite.delete({
-          where: { id: existing.id },
-        });
-        return { isFavorite: false, message: 'Removido de favoritos.' };
-      } else {
-        await this.prisma.favorite.create({
-          data: { userId, trackId },
-        });
-        return { isFavorite: true, message: 'Guardado en favoritos.' };
-      }
-    } catch (e) {
-      // In-memory fallback
-      const idx = this.inMemoryFavorites.findIndex(
-        (f) => f.userId === userId && f.trackId === trackId,
-      );
-      if (idx !== -1) {
-        this.inMemoryFavorites.splice(idx, 1);
-        return { isFavorite: false, message: 'Removido de favoritos.' };
-      } else {
-        this.inMemoryFavorites.push({
-          id: `fav-${Date.now()}`,
-          userId,
-          trackId,
-        });
-        return { isFavorite: true, message: 'Guardado en favoritos.' };
-      }
+    const where = { userId_trackId: { userId, trackId } };
+    const existing = await this.prisma.favorite.findUnique({ where });
+    if (existing) {
+      await this.prisma.favorite.deleteMany({ where: { userId, trackId } });
+      return { isFavorite: false, message: 'Removido de favoritos.' };
     }
+    try {
+      await this.prisma.favorite.create({ data: { userId, trackId } });
+    } catch (e) {
+      // Doble clic simultáneo: ya existe, el resultado es el mismo
+      if ((e as { code?: string })?.code !== 'P2002') throw e;
+    }
+    return { isFavorite: true, message: 'Guardado en favoritos.' };
   }
 
   async getUserFavorites(userId: string) {
-    try {
-      const favorites = await this.prisma.favorite.findMany({
-        where: { userId },
-        include: { track: { include: { producer: true } } },
-      });
-      if (favorites) {
-        return favorites.map((f) => f.track);
-      }
-    } catch (e) {
-      // Fallback
-    }
-
-    const userFavs = this.inMemoryFavorites.filter((f) => f.userId === userId);
-    return userFavs.map((f) => f.trackId);
+    const favorites = await this.prisma.favorite.findMany({
+      where: { userId },
+      include: {
+        track: {
+          include: {
+            producer: {
+              select: {
+                id: true,
+                name: true,
+                artistName: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return favorites.map((f) => f.track);
   }
 
   async getAdminStats() {
-    let totalUsers = 0;
-    let activeUsers = 0;
-    let totalProducers = 0;
-    let totalTracks = 0;
-    let totalSales = 0;
-    let totalRevenue = 0;
-
-    try {
-      totalUsers = await this.prisma.user.count();
-      activeUsers = await this.prisma.user.count({ where: { isActive: true } });
-      totalProducers = await this.prisma.user.count({
-        where: { role: 'PRODUCER' as any },
-      });
-      totalTracks = await this.prisma.track.count();
-      const sales = await this.prisma.purchase.aggregate({
-        where: { status: 'COMPLETED' },
-        _count: { _all: true },
-        _sum: { amount: true },
-      });
-      totalSales = sales._count._all;
-      totalRevenue = Math.round((sales._sum.amount ?? 0) * 100) / 100;
-    } catch (e) {
-      totalUsers = this.inMemoryUsers.length;
-      activeUsers = this.inMemoryUsers.filter((u) => u.isActive).length;
-      totalProducers = this.inMemoryUsers.filter(
-        (u) => u.role === 'PRODUCER' || u.role === 'ADMIN',
-      ).length;
-      totalTracks = 0;
-      totalSales = 0;
-      totalRevenue = 0;
-    }
-
+    const [totalUsers, activeUsers, totalProducers, totalTracks, sales] =
+      await Promise.all([
+        this.prisma.user.count(),
+        this.prisma.user.count({ where: { isActive: true } }),
+        this.prisma.user.count({ where: { role: 'PRODUCER' as any } }),
+        this.prisma.track.count(),
+        this.prisma.purchase.aggregate({
+          where: { status: 'COMPLETED' },
+          _count: { _all: true },
+          _sum: { amount: true },
+        }),
+      ]);
     return {
       totalUsers,
       activeUsers,
       totalProducers,
       totalTracks,
-      totalSales,
-      totalRevenue,
+      totalSales: sales._count._all,
+      totalRevenue: Math.round((sales._sum.amount ?? 0) * 100) / 100,
     };
   }
 
   /** Datos públicos de un artista (sin correo ni datos privados). */
   async getPublicArtist(id: string) {
-    let user: any = null;
-    let tracksCount = 0;
-    let totalPlays = 0;
-    try {
-      user = await this.prisma.user.findUnique({
-        where: { id },
-        include: { artist: true },
-      });
-      if (user && user.role === 'PRODUCER' && user.isActive) {
-        const agg = await this.prisma.track.aggregate({
-          where: { producerId: id },
-          _count: { _all: true },
-          _sum: { playsCount: true },
-        });
-        tracksCount = agg._count._all;
-        totalPlays = agg._sum.playsCount ?? 0;
-      }
-    } catch (e) {
-      user = this.inMemoryUsers.find((u) => u.id === id) ?? null;
-    }
-
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { artist: true },
+    });
     if (!user || user.role !== 'PRODUCER' || user.isActive === false) {
       throw new NotFoundException('Artista no encontrado.');
     }
+    const agg = await this.prisma.track.aggregate({
+      where: { producerId: id },
+      _count: { _all: true },
+      _sum: { playsCount: true },
+    });
+    const tracksCount = agg._count._all;
+    const totalPlays = agg._sum.playsCount ?? 0;
 
     const artist = user.artist;
     return {

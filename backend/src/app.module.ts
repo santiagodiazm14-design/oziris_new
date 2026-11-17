@@ -11,10 +11,13 @@ import { PurchasesModule } from './purchases/purchases.module';
 import { StorageModule } from './storage/storage.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { MailModule } from './mail/mail.module';
+import { envInt } from './common/env';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    ThrottlerModule.forRoot([
+      { ttl: 60_000, limit: envInt('RATE_LIMIT_GLOBAL', 120) },
+    ]),
     AuthModule,
     UsersModule,
     TracksModule,

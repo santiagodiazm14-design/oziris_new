@@ -1,0 +1,216 @@
+================================================================================
+           GUIA COMPLETA: COMANDOS, DEPENDENCIAS Y EJECUCION DE OZIRIS
+================================================================================
+
+Este documento contiene todos los requisitos, dependencias, variables de entorno 
+y comandos necesarios para instalar, configurar y correr todo el proyecto OZIRIS
+(Backend con NestJS + PostgreSQL / Prisma y Frontend con Next.js + React).
+
+--------------------------------------------------------------------------------
+1. REQUISITOS PREVIOS EN EL SISTEMA
+--------------------------------------------------------------------------------
+- Node.js: Version 18.x, 20.x o superior recomendada (incluye npm).
+- PostgreSQL: Servidor de base de datos corriendo localmente (puerto 5432).
+- Terminal o consola (PowerShell, CMD, Git Bash o terminal de VS Code).
+
+
+--------------------------------------------------------------------------------
+2. CONFIGURACION DE VARIABLES DE ENTORNO (.env)
+--------------------------------------------------------------------------------
+
+A) BACKEND: Archivo "backend/.env"
+Crea o revisa el archivo en: backend/.env con los siguientes valores:
+
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/oziris?schema=public"
+JWT_SECRET="oziris_super_secret_jwt_key_2026"
+PORT=4000
+MAIL_USER="santiagodiazm14@gmail.com"
+MAIL_PASS="xnax yobt bwba dcem"
+FRONTEND_URL=http://localhost:3000
+
+* Nota: Asegurate de que la contraseña y usuario de PostgreSQL coincidan con tu
+  instalacion local de Postgres (por defecto postgres:postgres en el puerto 5432).
+
+
+B) FRONTEND: Archivo "frontend/.env.local"
+Crea o revisa el archivo en: frontend/.env.local con el siguiente valor:
+
+NEXT_PUBLIC_API_URL=http://localhost:4000
+
+
+--------------------------------------------------------------------------------
+3. DEPENDENCIAS DEL BACKEND (NestJS + Prisma + Swagger)
+--------------------------------------------------------------------------------
+Ubicacion: carpeta "backend"
+
+Dependencias de Produccion (dependencies):
+- @nestjs/common (^11.0.1)      : Nucleo del framework NestJS.
+- @nestjs/core (^11.0.1)        : Motor principal del framework.
+- @nestjs/platform-express (^11.0.1): Adaptador Express para NestJS.
+- @nestjs/jwt (^12.0.2)         : Generacion y validacion de tokens JWT.
+- @nestjs/passport (^12.0.0)    : Modulo de autenticacion con Passport.
+- @nestjs/swagger (^11.4.7)     : Generador de documentacion OpenAPI / Swagger.
+- @nestjs/throttler (^6.7.1)    : Proteccion contra ataques de fuerza bruta (Rate limiting).
+- @prisma/client (^7.10.0)      : Cliente ORM para consultar la base de datos.
+- @prisma/adapter-pg (^7.10.0)  : Adaptador Prisma para conexiones directas PostgreSQL.
+- pg (^8.23.0)                  : Controlador nativo de PostgreSQL para Node.js.
+- bcryptjs (^3.0.3)             : Hasheo seguro de contraseñas.
+- class-validator (^0.15.1)     : Validacion declarativa de DTOs mediante decoradores.
+- class-transformer (^0.5.1)    : Transformacion y tipado de objetos JSON.
+- helmet (^8.3.0)               : Encabezados HTTP de seguridad.
+- nodemailer (^9.1.1)           : Envio de correos electronicos (recuperacion de clave).
+- passport (^0.7.0)             : Middleware de autenticacion.
+- passport-jwt (^4.0.1)         : Estrategia JWT para Passport.
+- reflect-metadata (^0.2.2)     : Reflexion de metadatos requerida por NestJS.
+- rxjs (^7.8.1)                 : Programacion reactiva y observables.
+- swagger-ui-express (^5.0.1)   : Interfaz visual interactiva de Swagger UI.
+
+Dependencias de Desarrollo (devDependencies):
+- @nestjs/cli (^11.0.0)         : Herramienta de linea de comandos para NestJS.
+- prisma (^7.8.0)               : CLI de Prisma para migraciones y esquema.
+- typescript (^5.7.3)           : Compilador de TypeScript.
+- ts-node (^10.9.2)             : Ejecucion directa de archivos TypeScript (seed).
+- jest (^30.0.0) / ts-jest      : Framework de pruebas unitarias.
+- prettier y eslint             : Formato y calidad de codigo.
+- @types/*                      : Tipos estaticos de TypeScript para las librerias.
+
+COMANDO PARA INSTALAR TODAS LAS DEPENDENCIAS DEL BACKEND:
+  cd backend
+  npm install
+
+
+--------------------------------------------------------------------------------
+4. DEPENDENCIAS DEL FRONTEND (Next.js 16 + React 19 + TailwindCSS 4)
+--------------------------------------------------------------------------------
+Ubicacion: carpeta "frontend"
+
+Dependencias de Produccion (dependencies):
+- next (16.2.6)                 : Framework web Fullstack para React con App Router.
+- react (19.2.4)                : Biblioteca para interfaces de usuario.
+- react-dom (19.2.4)            : Renderizador de React en el navegador.
+- lucide-react (^1.16.0)        : Paquete moderno de iconos vectoriales.
+
+Dependencias de Desarrollo (devDependencies):
+- tailwindcss (^4)              : Framework de utilidades CSS para diseño moderno.
+- @tailwindcss/postcss (^4)     : Plugin PostCSS oficial para Tailwind v4.
+- typescript (^5)               : Soporte de tipos estaticos para React/Next.js.
+- vitest (^5.1.0)               : Test runner rapido para pruebas unitarias.
+- @testing-library/react        : Utilidades para pruebas de componentes React.
+- jsdom (^29.1.1)               : Entorno de DOM virtual para ejecutar pruebas.
+- eslint / eslint-config-next   : Reglas de calidad y buenas practicas en Next.js.
+
+COMANDO PARA INSTALAR TODAS LAS DEPENDENCIAS DEL FRONTEND:
+  cd frontend
+  npm install
+
+
+--------------------------------------------------------------------------------
+5. COMANDOS DE BASE DE DATOS (PRISMA)
+--------------------------------------------------------------------------------
+(Ejecutar desde la carpeta "backend"):
+
+1. Crear o sincronizar las tablas en PostgreSQL segun el esquema:
+   npx prisma db push
+
+2. Generar el cliente de Prisma actualizado:
+   npx prisma generate
+
+3. Poblar la base de datos con datos de prueba iniciales (Seed):
+   npm run prisma:seed   (o: npx ts-node prisma/seed.ts)
+
+4. (Opcional) Abrir el visor visual interactivo de base de datos de Prisma:
+   npx prisma studio
+   -> Abrira una interfaz web en: http://localhost:5555
+
+
+--------------------------------------------------------------------------------
+6. COMANDOS PARA CORRER EL PROYECTO
+--------------------------------------------------------------------------------
+
+PASO 1: Iniciar el Backend (Terminal 1)
+--------------------------------------
+Comando:
+  cd backend
+  npm run start:dev
+
+Salida esperada:
+  🚀 OZIRIS API corriendo en:      http://localhost:4000
+  📚 Documentación Swagger en:     http://localhost:4000/api
+
+
+PASO 2: Iniciar el Frontend (Terminal 2)
+---------------------------------------
+Comando:
+  cd frontend
+  npm run dev
+
+Salida esperada:
+  - Local: http://localhost:3000
+
+
+--------------------------------------------------------------------------------
+7. COMANDOS PARA PRUEBAS (TESTS)
+--------------------------------------------------------------------------------
+
+Pruebas del Backend (Jest):
+  cd backend
+  npm test                  (Ejecuta las pruebas unitarias)
+  npm run test:watch        (Ejecuta en modo observador en tiempo real)
+  npm run test:cov          (Genera reporte de cobertura de pruebas)
+
+Pruebas del Frontend (Vitest):
+  cd frontend
+  npm test                  (Ejecuta todas las pruebas unitarias de componentes)
+  npm run test:watch        (Modo interactivo en tiempo real)
+  npm run test:coverage     (Reporte de cobertura en frontend)
+
+Pruebas de Carga y Rendimiento (k6):
+  k6 run k6/test-register.js (Ejecuta prueba de carga registrando 150 usuarios en paralelo)
+  k6 version                (Verifica la version instalada de k6)
+
+
+--------------------------------------------------------------------------------
+8. COMANDOS PARA CONSTRUCCION DE PRODUCCION (BUILD)
+--------------------------------------------------------------------------------
+
+Compilar Backend:
+  cd backend
+  npm run build
+  npm run start:prod        (Inicia el backend compilado en modo produccion)
+
+Compilar Frontend:
+  cd frontend
+  npm run build
+  npm run start             (Inicia el frontend optimizado en modo produccion)
+
+
+--------------------------------------------------------------------------------
+9. ENLACES Y CREDENCIALES DE PRUEBA
+--------------------------------------------------------------------------------
+
+- Frontend Web:        http://localhost:3000
+- Documentacion API:   http://localhost:4000/api  (Swagger UI interactivo)
+- Backend Base URL:    http://localhost:4000
+
+Usuarios de prueba precargados por el seed:
+
+1. Administrador (rol ADMIN):
+   Correo:     admin@oziris.test
+   Contraseña: AdminOziris123!
+
+2. Usuario Normal 1 (rol USER):
+   Correo:     usuario1@oziris.test
+   Contraseña: Oziris123!
+
+3. Usuario Normal 2 (rol USER):
+   Correo:     usuario2@oziris.test
+   Contraseña: Oziris123!
+
+4. Usuario Normal 3 (rol USER):
+   Correo:     usuario3@oziris.test
+   Contraseña: Oziris123!
+
+================================================================================
+Fin del archivo.
+================================================================================
+

@@ -1,5 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsOptional, IsString, IsUrl, MaxLength, ValidateIf } from 'class-validator';
+import {
+  Matches,
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+  ValidateIf,
+} from 'class-validator';
 
 export class UpdateProfileDto {
   @ApiPropertyOptional({ example: 'Carlos', description: 'Nombre del usuario' })
@@ -8,65 +17,110 @@ export class UpdateProfileDto {
   @MaxLength(100)
   name?: string;
 
-  @ApiPropertyOptional({ example: 'López', description: 'Apellido del usuario' })
+  @ApiPropertyOptional({
+    example: 'López',
+    description: 'Apellido del usuario',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   lastName?: string;
 
-  @ApiPropertyOptional({ example: 'DJ Karlo', description: 'Nombre artístico (para productores)' })
+  @ApiPropertyOptional({
+    example: 'DJ Karlo',
+    description: 'Nombre artístico (para productores)',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   artistName?: string;
 
-  @ApiPropertyOptional({ example: 'Bogotá, Colombia', description: 'Ciudad o país del usuario' })
+  @ApiPropertyOptional({
+    example: 'Bogotá, Colombia',
+    description: 'Ciudad o país del usuario',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(120)
   location?: string;
 
-  @ApiPropertyOptional({ example: 'Productor de trap y reggaeton desde 2018.', description: 'Biografía corta' })
+  @ApiPropertyOptional({
+    example: 'Productor de trap y reggaeton desde 2018.',
+    description: 'Biografía corta',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(500)
   bio?: string;
 
-  @ApiPropertyOptional({ example: '/uploads/avatar-abc123.png', description: 'URL de la foto de perfil' })
+  @ApiPropertyOptional({
+    example: '/uploads/avatar-abc123.png',
+    description: 'URL de la foto de perfil',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(300)
+  @Matches(/^(\/uploads\/[A-Za-z0-9._-]+|https?:\/\/.+)$/, {
+    message: 'URL de imagen inválida.',
+  })
   avatarUrl?: string;
-  @ApiPropertyOptional({ example: 'Trap', description: 'Género principal del artista' })
+  @ApiPropertyOptional({
+    example: 'Trap',
+    description: 'Género principal del artista',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(60)
   genre?: string;
 
-  @ApiPropertyOptional({ example: '/uploads/banner-abc123.png', description: 'URL del banner del artista' })
+  @ApiPropertyOptional({
+    example: '/uploads/banner-abc123.png',
+    description: 'URL del banner del artista',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(300)
+  @Matches(/^(\/uploads\/[A-Za-z0-9._-]+|https?:\/\/.+)$/, {
+    message: 'URL de imagen inválida.',
+  })
   bannerUrl?: string;
 
-  @ApiPropertyOptional({ example: 'https://open.spotify.com/artist/...', description: 'Enlace de Spotify' })
+  @ApiPropertyOptional({
+    example: 'https://open.spotify.com/artist/...',
+    description: 'Enlace de Spotify',
+  })
   @IsOptional()
   @ValidateIf((_o, v) => v !== '')
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { message: 'URL inválida.' })
+  @IsUrl(
+    { protocols: ['http', 'https'], require_protocol: true },
+    { message: 'URL inválida.' },
+  )
   @MaxLength(300)
   spotifyUrl?: string;
 
-  @ApiPropertyOptional({ example: 'https://instagram.com/usuario', description: 'Enlace de Instagram' })
+  @ApiPropertyOptional({
+    example: 'https://instagram.com/usuario',
+    description: 'Enlace de Instagram',
+  })
   @IsOptional()
   @ValidateIf((_o, v) => v !== '')
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { message: 'URL inválida.' })
+  @IsUrl(
+    { protocols: ['http', 'https'], require_protocol: true },
+    { message: 'URL inválida.' },
+  )
   @MaxLength(300)
   instagramUrl?: string;
 
-  @ApiPropertyOptional({ example: 'https://youtube.com/@usuario', description: 'Enlace de YouTube' })
+  @ApiPropertyOptional({
+    example: 'https://youtube.com/@usuario',
+    description: 'Enlace de YouTube',
+  })
   @IsOptional()
   @ValidateIf((_o, v) => v !== '')
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { message: 'URL inválida.' })
+  @IsUrl(
+    { protocols: ['http', 'https'], require_protocol: true },
+    { message: 'URL inválida.' },
+  )
   @MaxLength(300)
   youtubeUrl?: string;
 }
@@ -96,17 +150,27 @@ export class UpdateUserDto {
   @MaxLength(120)
   location?: string;
 
-  @ApiPropertyOptional({ example: 'PRODUCER', enum: ['USER', 'ADMIN', 'PRODUCER'], description: 'Rol del usuario' })
+  @ApiPropertyOptional({
+    example: 'PRODUCER',
+    enum: ['USER', 'ADMIN', 'PRODUCER'],
+    description: 'Rol del usuario',
+  })
   @IsOptional()
   @IsIn(['USER', 'ADMIN', 'PRODUCER'])
   role?: string;
 
-  @ApiPropertyOptional({ example: true, description: 'Estado activo/inactivo de la cuenta' })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Estado activo/inactivo de la cuenta',
+  })
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
 
-  @ApiPropertyOptional({ example: true, description: '[ADMIN] Marcar al artista como verificado' })
+  @ApiPropertyOptional({
+    example: true,
+    description: '[ADMIN] Marcar al artista como verificado',
+  })
   @IsOptional()
   @IsBoolean()
   verified?: boolean;
@@ -121,5 +185,8 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   @MaxLength(300)
+  @Matches(/^(\/uploads\/[A-Za-z0-9._-]+|https?:\/\/.+)$/, {
+    message: 'URL de imagen inválida.',
+  })
   avatarUrl?: string;
 }

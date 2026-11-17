@@ -5,7 +5,12 @@
  */
 export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET?.trim();
-  if (secret) return secret;
+  if (secret) {
+    if (secret.length < 32 && process.env.NODE_ENV !== 'test') {
+      throw new Error('JWT_SECRET es demasiado corto (mínimo 32 caracteres).');
+    }
+    return secret;
+  }
   if (process.env.NODE_ENV === 'test') return 'test-only-jwt-secret';
   throw new Error(
     'JWT_SECRET no está definido. Agrégalo al archivo .env (mínimo 32 caracteres aleatorios).',
@@ -20,3 +25,12 @@ export function getAllowedOrigins(): string[] {
     .map((o) => o.trim().replace(/\/$/, ''))
     .filter(Boolean);
 }
+
+/** Entero positivo desde una variable de entorno, con valor por defecto. */
+export function envInt(name: string, fallback: number): number {
+  const n = Number(process.env[name]);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
+/** Límite de peticiones/minuto por IP en el registro (ajustable para pruebas de carga). */
+export const registerRateLimit = () => envInt('REGISTER_RATE_LIMIT', 10);

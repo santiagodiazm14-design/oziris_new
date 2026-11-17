@@ -21,7 +21,10 @@ describe('UsersService', () => {
         count: jest.fn().mockResolvedValue(25),
       },
       purchase: {
-        aggregate: jest.fn().mockResolvedValue({ _count: { _all: 5 }, _sum: { amount: 1500.456 } }),
+        aggregate: jest.fn().mockResolvedValue({
+          _count: { _all: 5 },
+          _sum: { amount: 1500.456 },
+        }),
         findMany: jest.fn().mockResolvedValue([]),
         count: jest.fn().mockResolvedValue(5),
       },
@@ -103,10 +106,9 @@ describe('UsersService', () => {
 
   describe('createUser', () => {
     it('debe crear un usuario nuevo con contraseña encriptada', async () => {
-      prismaService.user.findUnique.mockResolvedValue(null);
       prismaService.user.create.mockImplementation(({ data }: any) => {
         return Promise.resolve({
-          id: data.id,
+          id: 'uuid-1',
           ...data,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -121,17 +123,15 @@ describe('UsersService', () => {
         role: 'USER',
       });
 
-      expect(newUser.id).toMatch(/^user-/);
+      expect(newUser.id).toBe('uuid-1');
       expect(newUser.email).toBe('juan@mail.com');
       expect((newUser as any).password).toBeUndefined();
       expect(prismaService.user.create).toHaveBeenCalled();
     });
 
     it('debe arrojar ConflictException si el email ya se encuentra registrado', async () => {
-      prismaService.user.findUnique.mockResolvedValue({
-        id: 'existing-id',
-        email: 'juan@mail.com',
-      });
+      // La restricción UNIQUE de PostgreSQL responde con P2002
+      prismaService.user.create.mockRejectedValue({ code: 'P2002' });
 
       await expect(
         service.createUser({

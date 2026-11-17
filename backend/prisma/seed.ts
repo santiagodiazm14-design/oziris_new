@@ -1,9 +1,14 @@
 import { PrismaClient, Role } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/oziris?schema=public';
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) throw new Error('DATABASE_URL no está definido.');
+const isProd = process.env.NODE_ENV === 'production';
+if (isProd && !process.env.ADMIN_PASSWORD) {
+  throw new Error('En producción define ADMIN_PASSWORD para crear el administrador.');
+}
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
@@ -12,7 +17,7 @@ async function main() {
   console.log('🌱 Starting database seed into PostgreSQL...');
 
   const userPasswordHash = await bcrypt.hash('Oziris123!', 10);
-  const adminPasswordHash = await bcrypt.hash('AdminOziris123!', 10);
+  const adminPasswordHash = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'AdminOziris123!', 10);
 
   const testUsers = [
     {

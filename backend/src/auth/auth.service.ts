@@ -5,10 +5,25 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { createHash, randomInt, timingSafeEqual } from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { UsersService } from '../users/users.service';
-import * as bcrypt from 'bcryptjs';
+
+const MAX_RESET_ATTEMPTS = 5;
+const RESET_TTL_MS = 15 * 60 * 1000;
+const GENERIC_FORGOT_MSG =
+  'Si el correo está registrado en Oziris, recibirás un código de recuperación.';
+// Hash de relleno para igualar el tiempo de respuesta cuando el usuario no existe
+const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', 10);
+
+const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
+const safeEqual = (a: string, b: string) => {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ba.length === bb.length && timingSafeEqual(ba, bb);
+};
 
 @Injectable()
 export class AuthService {
@@ -27,10 +42,9 @@ export class AuthService {
     artisticName?: string;
     genre?: string;
   }) {
-    if (!data.name || !data.email || !data.password) {
+    if (!data.name?.trim() || !data.email || !data.password) {
       throw new BadRequestException('Todos los campos son obligatorios.');
     }
-
     if (data.password.length < 6) {
       throw new BadRequestException(
         'La contraseña debe tener al menos 6 caracteres.',
@@ -38,6 +52,7 @@ export class AuthService {
     }
 
     const isArtist = data.accountType === 'ARTIST';
+    // Nunca se asigna ADMIN desde el registro público
     const assignedRole = isArtist ? 'PRODUCER' : 'USER';
 
     const newUser = await this.usersService.createUser({
@@ -51,13 +66,11 @@ export class AuthService {
       genre: isArtist ? data.genre?.trim() : undefined,
     });
 
-    const token = this.generateToken(newUser.id, newUser.email, newUser.role);
-
     return {
       message: isArtist
         ? '¡Cuenta de Artista creada exitosamente!'
         : '¡Usuario registrado exitosamente!',
-      access_token: token,
+      access_token: this.generateToken(newUser.id, newUser.email, newUser.role),
       user: newUser,
     };
   }
@@ -69,27 +82,24 @@ export class AuthService {
 
     const user = await this.usersService.findByEmailWithPassword(data.email);
 
-    if (!user) {
+    // Siempre se ejecuta bcrypt para no revelar por tiempo si el correo existe
+    const isPasswordValid = await bcrypt.compare(
+      data.password,
+      user?.password ?? DUMMY_HASH,
+    );
+    if (!user || !isPasswordValid) {
       throw new UnauthorizedException('Credenciales incorrectas.');
     }
-
     if (user.isActive === false) {
       throw new ForbiddenException(
         'Esta cuenta se encuentra desactivada. Contacte al administrador.',
       );
     }
 
-    const isPasswordValid = await bcrypt.compare(data.password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciales incorrectas.');
-    }
-
-    const token = this.generateToken(user.id, user.email, user.role);
     const fullUser = await this.usersService.findById(user.id);
-
     return {
       message: 'Inicio de sesión exitoso.',
-      access_token: token,
+      access_token: this.generateToken(user.id, user.email, user.role),
       user: fullUser,
     };
   }
@@ -99,8 +109,7 @@ export class AuthService {
   }
 
   private generateToken(userId: string, email: string, role: string): string {
-    const payload = { sub: userId, email, role };
-    return this.jwtService.sign(payload);
+    return this.jwtService.sign({ sub: userId, email, role });
   }
 
   async forgotPassword(email: string, ipAddress?: string) {
@@ -110,150 +119,79 @@ export class AuthService {
     }
 
     const user = await this.usersService.findByEmailWithPassword(cleanEmail);
-    if (!user) {
-      // Protect user privacy by returning generic success message
-      return {
-        message:
-          'Si el correo está registrado en Oziris, recibirás un código de recuperación.',
-      };
+    if (!user || user.isActive === false) {
+      return { message: GENERIC_FORGOT_MSG };
     }
 
-    // Invalidate any existing unused reset codes for this email
-    try {
-      await this.prisma.passwordReset.updateMany({
-        where: {
-          email: cleanEmail,
-          used: false,
-        },
-        data: {
-          used: true,
-        },
-      });
-    } catch (e) {
-      // Ignore if table query fails
-    }
+    // Código de 6 dígitos con generador criptográficamente seguro
+    const code = randomInt(100000, 1000000).toString();
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes validity
-
-    try {
-      await this.prisma.passwordReset.create({
+    await this.prisma.$transaction([
+      this.prisma.passwordReset.updateMany({
+        where: { email: cleanEmail, used: false },
+        data: { used: true },
+      }),
+      this.prisma.passwordReset.create({
         data: {
           email: cleanEmail,
-          code,
-          expiresAt,
+          // Solo se guarda el hash: una fuga de BD no expone códigos válidos
+          code: sha256(code),
+          expiresAt: new Date(Date.now() + RESET_TTL_MS),
           userId: user.id,
           attempts: 0,
           used: false,
-          ipAddress: ipAddress || null,
+          ipAddress: ipAddress ? String(ipAddress).slice(0, 64) : null,
         },
-      });
-
-      // Keep user columns in sync for backward compatibility
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          resetPasswordCode: code,
-          resetPasswordExpires: expiresAt,
-        },
-      });
-    } catch (e) {
-      // In-memory fallback
-      user.resetPasswordCode = code;
-      user.resetPasswordExpires = expiresAt;
-    }
+      }),
+    ]);
 
     await this.mailService.sendPasswordResetEmail(user.email, code);
-    return {
-      message:
-        'Si el correo está registrado en Oziris, recibirás un código de recuperación.',
-      email: cleanEmail,
-    };
+    // No se devuelve el email para no confirmar si existe la cuenta
+    return { message: GENERIC_FORGOT_MSG };
   }
 
-  async verifyResetCode(email: string, code: string) {
-    const cleanEmail = email?.trim().toLowerCase();
-    const cleanCode = code?.trim();
-
-    if (!cleanEmail || !cleanCode) {
-      throw new BadRequestException('Por favor proporciona correo y código.');
+  /**
+   * Valida un código contra el último registro vigente. Cada fallo suma un
+   * intento (aplica tanto a verify como a reset); a los 5 el código se invalida.
+   */
+  private async checkResetCode(email: string, code: string) {
+    const record = await this.prisma.passwordReset.findFirst({
+      where: { email, used: false },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!record) {
+      throw new BadRequestException(
+        'Código inválido o ya utilizado. Solicita uno nuevo.',
+      );
     }
-
-    // First check in dedicated PasswordReset table
-    let resetRecord: any = null;
-    try {
-      resetRecord = await this.prisma.passwordReset.findFirst({
-        where: {
-          email: cleanEmail,
-          used: false,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
+    if (new Date() > record.expiresAt) {
+      await this.prisma.passwordReset.update({
+        where: { id: record.id },
+        data: { used: true },
       });
-    } catch (e) {
-      // Fallback
-    }
-
-    if (!resetRecord) {
-      // Fallback to User table if not found in PasswordReset table
-      const user = await this.usersService.findByEmailWithPassword(cleanEmail);
-      if (!user || !user.resetPasswordCode || !user.resetPasswordExpires) {
-        throw new BadRequestException(
-          'Código inválido o ya utilizado. Solicita uno nuevo.',
-        );
-      }
-      if (user.resetPasswordCode !== cleanCode) {
-        throw new BadRequestException('El código ingresado es incorrecto.');
-      }
-      if (new Date() > new Date(user.resetPasswordExpires)) {
-        throw new BadRequestException(
-          'El código ha expirado (validez de 15 minutos). Por favor solicita uno nuevo.',
-        );
-      }
-      return { message: 'Código verificado con éxito.' };
-    }
-
-    // Check expiration
-    if (new Date() > new Date(resetRecord.expiresAt)) {
-      try {
-        await this.prisma.passwordReset.update({
-          where: { id: resetRecord.id },
-          data: { used: true },
-        });
-      } catch (_) {}
       throw new BadRequestException(
         'El código ha expirado (validez de 15 minutos). Por favor solicita uno nuevo.',
       );
     }
-
-    // Check brute force attempts (max 5 failed attempts)
-    if (resetRecord.attempts >= 5) {
-      try {
-        await this.prisma.passwordReset.update({
-          where: { id: resetRecord.id },
-          data: { used: true },
-        });
-      } catch (_) {}
+    if (record.attempts >= MAX_RESET_ATTEMPTS) {
+      await this.prisma.passwordReset.update({
+        where: { id: record.id },
+        data: { used: true },
+      });
       throw new BadRequestException(
         'Has superado el número máximo de intentos permitidos. Solicita un nuevo código por seguridad.',
       );
     }
-
-    // Validate code match
-    if (resetRecord.code !== cleanCode) {
-      const nextAttempts = resetRecord.attempts + 1;
-      try {
-        await this.prisma.passwordReset.update({
-          where: { id: resetRecord.id },
-          data: {
-            attempts: nextAttempts,
-            used: nextAttempts >= 5,
-          },
-        });
-      } catch (_) {}
-
-      const remaining = 5 - nextAttempts;
+    if (!safeEqual(record.code, sha256(code))) {
+      const nextAttempts = record.attempts + 1;
+      await this.prisma.passwordReset.update({
+        where: { id: record.id },
+        data: {
+          attempts: nextAttempts,
+          used: nextAttempts >= MAX_RESET_ATTEMPTS,
+        },
+      });
+      const remaining = MAX_RESET_ATTEMPTS - nextAttempts;
       if (remaining <= 0) {
         throw new BadRequestException(
           'Código incorrecto. Has agotado tus intentos. Por seguridad solicita un nuevo código.',
@@ -263,100 +201,49 @@ export class AuthService {
         `El código ingresado es incorrecto. Te ${remaining === 1 ? 'queda 1 intento' : `quedan ${remaining} intentos`}.`,
       );
     }
+    return record;
+  }
 
+  async verifyResetCode(email: string, code: string) {
+    const cleanEmail = email?.trim().toLowerCase();
+    const cleanCode = code?.trim();
+    if (!cleanEmail || !cleanCode) {
+      throw new BadRequestException('Por favor proporciona correo y código.');
+    }
+    await this.checkResetCode(cleanEmail, cleanCode);
     return { message: 'Código verificado con éxito.' };
   }
 
   async resetPassword(email: string, code: string, newPassword: string) {
     const cleanEmail = email?.trim().toLowerCase();
     const cleanCode = code?.trim();
-
     if (!cleanEmail || !cleanCode || !newPassword) {
       throw new BadRequestException('Todos los campos son obligatorios.');
     }
-
     if (newPassword.length < 6) {
       throw new BadRequestException(
         'La nueva contraseña debe tener al menos 6 caracteres.',
       );
     }
 
-    const user = await this.usersService.findByEmailWithPassword(cleanEmail);
-    if (!user) {
-      throw new BadRequestException('Usuario no encontrado.');
-    }
-
-    // Validate with PasswordReset record
-    let resetRecord: any = null;
-    try {
-      resetRecord = await this.prisma.passwordReset.findFirst({
-        where: {
-          email: cleanEmail,
-          used: false,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-    } catch (_) {}
-
-    if (resetRecord) {
-      if (new Date() > new Date(resetRecord.expiresAt)) {
-        try {
-          await this.prisma.passwordReset.update({
-            where: { id: resetRecord.id },
-            data: { used: true },
-          });
-        } catch (_) {}
-        throw new BadRequestException(
-          'El código ha expirado. Solicita un nuevo código.',
-        );
-      }
-
-      if (resetRecord.attempts >= 5 || resetRecord.code !== cleanCode) {
-        throw new BadRequestException('Código incorrecto o no autorizado.');
-      }
-    } else {
-      // Fallback to User table
-      if (!user.resetPasswordCode || !user.resetPasswordExpires) {
-        throw new BadRequestException('Código inválido o expirado.');
-      }
-      if (user.resetPasswordCode !== cleanCode) {
-        throw new BadRequestException('Código incorrecto.');
-      }
-      if (new Date() > new Date(user.resetPasswordExpires)) {
-        throw new BadRequestException(
-          'El código ha expirado. Solicita un nuevo código.',
-        );
-      }
-    }
-
+    const record = await this.checkResetCode(cleanEmail, cleanCode);
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    try {
-      await this.prisma.user.update({
-        where: { id: user.id },
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: record.userId },
         data: {
           password: hashedPassword,
           resetPasswordCode: null,
           resetPasswordExpires: null,
         },
-      });
-
-      if (resetRecord) {
-        await this.prisma.passwordReset.update({
-          where: { id: resetRecord.id },
-          data: {
-            used: true,
-            usedAt: new Date(),
-          },
-        });
-      }
-    } catch (e) {
-      user.password = hashedPassword;
-      user.resetPasswordCode = null;
-      user.resetPasswordExpires = null;
-    }
+      }),
+      // Se invalidan todos los códigos pendientes de ese correo
+      this.prisma.passwordReset.updateMany({
+        where: { email: cleanEmail, used: false },
+        data: { used: true, usedAt: new Date() },
+      }),
+    ]);
 
     return {
       message:
@@ -384,15 +271,10 @@ export class AuthService {
       );
     }
     const hashed = await bcrypt.hash(newPassword, 10);
-    try {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { password: hashed },
-      });
-    } catch (e) {
-      // Respaldo en memoria (solo si la base de datos no está disponible)
-      user.password = hashed;
-    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
     return { message: 'Contraseña actualizada correctamente.' };
   }
 }

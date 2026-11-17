@@ -11,6 +11,8 @@ describe('PurchasesService', () => {
 
   beforeEach(async () => {
     prismaService = {
+      track: { findMany: jest.fn() },
+      $transaction: jest.fn(),
       purchase: {
         findFirst: jest.fn(),
         create: jest.fn(),
@@ -28,6 +30,12 @@ describe('PurchasesService', () => {
     tracksService = {
       findOne: jest.fn(),
     };
+    // La transacción interactiva recibe un cliente con los mismos modelos
+    prismaService.$transaction.mockImplementation(async (arg: any) =>
+      typeof arg === 'function'
+        ? arg({ ...prismaService, $executeRaw: jest.fn() })
+        : Promise.all(arg),
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -51,7 +59,7 @@ describe('PurchasesService', () => {
     });
 
     it('debe arrojar NotFoundException si la pista indicada no existe', async () => {
-      tracksService.findOne.mockRejectedValue(new NotFoundException());
+      prismaService.track.findMany.mockResolvedValue([]);
 
       await expect(
         service.simulatePayment('user-1', 'USER', {
@@ -69,7 +77,7 @@ describe('PurchasesService', () => {
         audioUrl: '/audio.mp3',
         coverUrl: '/cover.jpg',
       };
-      tracksService.findOne.mockResolvedValue(mockTrack);
+      prismaService.track.findMany.mockResolvedValue([mockTrack]);
       prismaService.purchase.findFirst.mockResolvedValue(null);
       prismaService.purchase.create.mockResolvedValue({
         id: 'purchase-1',

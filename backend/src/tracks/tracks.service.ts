@@ -5,14 +5,12 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Track } from './dto';
-import { INITIAL_TRACKS } from './mock-tracks.data';
+import { rethrowPrisma } from '../common/prisma-errors';
 
 export type { Track };
 
 @Injectable()
 export class TracksService {
-  private inMemoryTracks: Track[] = [...INITIAL_TRACKS];
-
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(params?: {
@@ -23,250 +21,150 @@ export class TracksService {
     category?: string;
     sort?: string;
     producerId?: string;
+    limit?: number;
+    offset?: number;
   }): Promise<Track[]> {
     const genre = params?.genre;
-    const search = params?.search?.trim();
-    const tag = params?.tag?.trim();
+    const search = params?.search?.trim().slice(0, 100);
+    const tag = params?.tag?.trim().slice(0, 50);
     const maxPrice = params?.maxPrice;
     const category = params?.category;
     const sort = params?.sort || 'newest';
 
-    try {
-      const where: any = {};
-      const andConditions: any[] = [];
+    const where: any = {};
+    const andConditions: any[] = [];
 
-      if (params?.producerId) {
-        andConditions.push({ producerId: params.producerId });
-      }
+    if (params?.producerId) {
+      andConditions.push({ producerId: params.producerId });
+    }
 
-      if (genre && genre !== 'all') {
-        andConditions.push({
-          genre: { equals: genre, mode: 'insensitive' as const },
-        });
-      }
+    if (genre && genre !== 'all') {
+      andConditions.push({
+        genre: { equals: genre, mode: 'insensitive' as const },
+      });
+    }
 
-      if (tag) {
-        andConditions.push({
-          tags: { has: tag },
-        });
-      }
+    if (tag) {
+      andConditions.push({
+        tags: { has: tag },
+      });
+    }
 
-      if (maxPrice !== undefined && !isNaN(maxPrice)) {
-        andConditions.push({
-          price: { lte: maxPrice },
-        });
-      }
+    if (maxPrice !== undefined && !isNaN(maxPrice)) {
+      andConditions.push({
+        price: { lte: maxPrice },
+      });
+    }
 
-      if (category) {
-        if (category === 'under20') {
-          andConditions.push({ price: { lte: 20 } });
-        } else if (category === 'free') {
-          andConditions.push({ price: { lte: 15 } });
-        } else if (category === 'exclusive') {
-          andConditions.push({ price: { gte: 35 } });
-        } else if (category === 'coro' || category === 'vocals') {
-          andConditions.push({
-            OR: [
-              { tags: { has: 'coro' } },
-              { tags: { has: 'vocals' } },
-              { tags: { has: 'hook' } },
-              { title: { contains: 'coro', mode: 'insensitive' as const } },
-              { title: { contains: 'vocals', mode: 'insensitive' as const } },
-            ],
-          });
-        }
-      }
-
-      if (search) {
+    if (category) {
+      if (category === 'under20') {
+        andConditions.push({ price: { lte: 20 } });
+      } else if (category === 'free') {
+        andConditions.push({ price: { lte: 15 } });
+      } else if (category === 'exclusive') {
+        andConditions.push({ price: { gte: 35 } });
+      } else if (category === 'coro' || category === 'vocals') {
         andConditions.push({
           OR: [
-            { title: { contains: search, mode: 'insensitive' as const } },
-            { description: { contains: search, mode: 'insensitive' as const } },
-            { genre: { contains: search, mode: 'insensitive' as const } },
-            { key: { contains: search, mode: 'insensitive' as const } },
-            {
-              producer: {
-                name: { contains: search, mode: 'insensitive' as const },
-              },
-            },
-            {
-              producer: {
-                artistName: { contains: search, mode: 'insensitive' as const },
-              },
-            },
-            { tags: { has: search } },
+            { tags: { has: 'coro' } },
+            { tags: { has: 'vocals' } },
+            { tags: { has: 'hook' } },
+            { title: { contains: 'coro', mode: 'insensitive' as const } },
+            { title: { contains: 'vocals', mode: 'insensitive' as const } },
           ],
         });
       }
-
-      if (andConditions.length > 0) {
-        where.AND = andConditions;
-      }
-
-      let orderBy: any = { createdAt: 'desc' };
-      if (sort === 'price_asc') {
-        orderBy = { price: 'asc' };
-      } else if (sort === 'price_desc') {
-        orderBy = { price: 'desc' };
-      } else if (sort === 'bpm_asc') {
-        orderBy = { bpm: 'asc' };
-      } else if (sort === 'bpm_desc') {
-        orderBy = { bpm: 'desc' };
-      }
-
-      const dbTracks = await this.prisma.track.findMany({
-        where,
-        include: { producer: true },
-        orderBy,
-      });
-
-      if (dbTracks && dbTracks.length > 0) {
-        return dbTracks.map((t) => this.formatTrack(t));
-      }
-    } catch (e) {
-      console.error(
-        'Error fetching tracks from DB (fallback to memory):',
-        e?.message || e,
-      );
     }
 
-    // In-memory fallback
-    let list = [...this.inMemoryTracks];
-    if (params?.producerId) {
-      list = list.filter((t) => t.producerId === params.producerId);
-    }
-    if (genre && genre !== 'all') {
-      list = list.filter((t) => t.genre?.toLowerCase() === genre.toLowerCase());
-    }
-    if (tag) {
-      list = list.filter((t) =>
-        t.tags?.some((tg) => tg.toLowerCase() === tag.toLowerCase()),
-      );
-    }
-    if (maxPrice !== undefined && !isNaN(maxPrice)) {
-      list = list.filter((t) => Number(t.price) <= maxPrice);
-    }
-    if (category === 'under20') {
-      list = list.filter((t) => Number(t.price) <= 20);
-    } else if (category === 'free') {
-      list = list.filter((t) => Number(t.price) <= 15);
-    } else if (category === 'exclusive') {
-      list = list.filter((t) => Number(t.price) >= 35);
-    }
     if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) ||
-          t.genre?.toLowerCase().includes(q) ||
-          t.tags?.some((tg) => tg.toLowerCase().includes(q)) ||
-          t.producer?.name.toLowerCase().includes(q) ||
-          t.producer?.artistName?.toLowerCase().includes(q) ||
-          (t.bpm && t.bpm.toString().includes(q)) ||
-          (t.key && t.key.toLowerCase().includes(q)),
-      );
+      andConditions.push({
+        OR: [
+          { title: { contains: search, mode: 'insensitive' as const } },
+          { description: { contains: search, mode: 'insensitive' as const } },
+          { genre: { contains: search, mode: 'insensitive' as const } },
+          { key: { contains: search, mode: 'insensitive' as const } },
+          {
+            producer: {
+              name: { contains: search, mode: 'insensitive' as const },
+            },
+          },
+          {
+            producer: {
+              artistName: { contains: search, mode: 'insensitive' as const },
+            },
+          },
+          { tags: { has: search } },
+        ],
+      });
     }
-    return list;
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
+
+    let orderBy: any = { createdAt: 'desc' };
+    if (sort === 'price_asc') {
+      orderBy = { price: 'asc' };
+    } else if (sort === 'price_desc') {
+      orderBy = { price: 'desc' };
+    } else if (sort === 'bpm_asc') {
+      orderBy = { bpm: 'asc' };
+    } else if (sort === 'bpm_desc') {
+      orderBy = { bpm: 'desc' };
+    }
+
+    const dbTracks = await this.prisma.track.findMany({
+      where,
+      include: { producer: true },
+      orderBy,
+      take: Math.min(Math.max(Math.floor(params?.limit ?? 100), 1), 200),
+      skip: Math.max(Math.floor(params?.offset ?? 0), 0),
+    });
+    return dbTracks.map((t) => this.formatTrack(t));
   }
 
   async findOne(id: string): Promise<Track> {
-    try {
-      const track = await this.prisma.track.findUnique({
-        where: { id },
-        include: { producer: true },
-      });
-      if (track) return this.formatTrack(track);
-    } catch (e) {
-      // Fallback
-    }
-
-    const track = this.inMemoryTracks.find((t) => t.id === id);
+    const track = await this.prisma.track.findUnique({
+      where: { id },
+      include: { producer: true },
+    });
     if (!track) {
       throw new NotFoundException(`Beat con ID ${id} no encontrado.`);
     }
-    return track;
+    return this.formatTrack(track);
   }
 
-  async create(data: Partial<Track> & { producerId?: string }): Promise<Track> {
-    const producerId = data.producerId || 'user-admin-1';
-
-    // Verify that the user has an artist profile or producer/admin role
-    if (producerId && producerId !== 'user-admin-1') {
-      try {
-        const u = await this.prisma.user.findUnique({
-          where: { id: producerId },
-          include: { artist: true },
-        });
-        if (u && u.role === 'USER' && !u.artist) {
-          throw new ForbiddenException(
-            'Acceso denegado: Solo los usuarios con perfil de artista o productores pueden subir beats.',
-          );
-        }
-      } catch (e: any) {
-        if (e instanceof ForbiddenException) throw e;
-      }
+  async create(data: Partial<Track> & { producerId: string }): Promise<Track> {
+    const producer = await this.prisma.user.findUnique({
+      where: { id: data.producerId },
+      include: { artist: true },
+    });
+    if (!producer || !producer.isActive) {
+      throw new ForbiddenException('Cuenta no válida para subir beats.');
     }
-
-    // Fetch producer from DB to get avatar if cover not provided
-    let producerAvatarUrl: string | null = null;
-    try {
-      const p = await this.prisma.user.findUnique({
-        where: { id: producerId },
-      });
-      if (p) producerAvatarUrl = p.avatarUrl;
-    } catch (e) {}
-
-    const newTrack: Track = {
-      id: `track-${Date.now()}`,
-      title: data.title || 'Untitled Beat',
-      description: data.description || '',
-      price: Number(data.price) || 29.99,
-      genre: data.genre || 'Trap',
-      bpm: Number(data.bpm) || 120,
-      key: data.key || 'C Minor',
-      tags: data.tags || [],
-      audioUrl: data.audioUrl || '',
-      fullAudioUrl: data.fullAudioUrl || data.audioUrl || '',
-      coverUrl: data.coverUrl || producerAvatarUrl || '',
-      producerId: producerId,
-      producer: {
-        id: producerId,
-        name: 'Oziris Producer',
-        email: 'producer@oziris.com',
-        avatarUrl: producerAvatarUrl,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    try {
-      const created = await this.prisma.track.create({
-        data: {
-          id: newTrack.id,
-          title: newTrack.title,
-          description: newTrack.description,
-          price: newTrack.price,
-          genre: newTrack.genre,
-          bpm: newTrack.bpm,
-          key: newTrack.key,
-          tags: newTrack.tags || [],
-          audioUrl: newTrack.audioUrl,
-          fullAudioUrl: newTrack.fullAudioUrl,
-          coverUrl: newTrack.coverUrl,
-          producerId: producerId,
-        },
-        include: { producer: true },
-      });
-      if (created) return this.formatTrack(created);
-    } catch (e) {
-      console.error(
-        'DB create track error (using in-memory fallback):',
-        e?.message || e,
+    if (producer.role === 'USER' && !producer.artist) {
+      throw new ForbiddenException(
+        'Acceso denegado: Solo los usuarios con perfil de artista o productores pueden subir beats.',
       );
     }
 
-    this.inMemoryTracks.unshift(newTrack);
-    return newTrack;
+    const created = await this.prisma.track.create({
+      data: {
+        title: data.title || 'Untitled Beat',
+        description: data.description || '',
+        price: Number(data.price) || 29.99,
+        genre: data.genre || 'Trap',
+        bpm: Number(data.bpm) || 120,
+        key: data.key || 'C Minor',
+        tags: data.tags || [],
+        audioUrl: data.audioUrl || '',
+        fullAudioUrl: data.fullAudioUrl || data.audioUrl || '',
+        coverUrl: data.coverUrl || producer.avatarUrl || '',
+        producerId: producer.id,
+      },
+      include: { producer: true },
+    });
+    return this.formatTrack(created);
   }
 
   async update(
@@ -281,38 +179,24 @@ export class TracksService {
       tags?: string[];
     },
   ): Promise<Track> {
-    const patch = {
-      title: data.title?.trim() || undefined,
-      description: data.description,
-      price: data.price,
-      genre: data.genre,
-      bpm: data.bpm,
-      key: data.key,
-      tags: data.tags,
-    };
     try {
       const updated = await this.prisma.track.update({
         where: { id },
-        data: patch,
+        data: {
+          title: data.title?.trim() || undefined,
+          description: data.description,
+          price: data.price,
+          genre: data.genre,
+          bpm: data.bpm,
+          key: data.key,
+          tags: data.tags,
+        },
         include: { producer: true },
       });
-      if (updated) return this.formatTrack(updated);
+      return this.formatTrack(updated);
     } catch (e) {
-      // Fallback
+      rethrowPrisma(e, `Beat con ID ${id} no encontrado.`);
     }
-    const idx = this.inMemoryTracks.findIndex((t) => t.id === id);
-    if (idx === -1) {
-      throw new NotFoundException(`Beat con ID ${id} no encontrado.`);
-    }
-    const clean = Object.fromEntries(
-      Object.entries(patch).filter(([, v]) => v !== undefined),
-    );
-    this.inMemoryTracks[idx] = {
-      ...this.inMemoryTracks[idx],
-      ...clean,
-      updatedAt: new Date().toISOString(),
-    };
-    return this.inMemoryTracks[idx];
   }
 
   async registerPlay(id: string): Promise<{ playsCount: number }> {
@@ -324,21 +208,16 @@ export class TracksService {
       });
       return { playsCount: t.playsCount };
     } catch (e) {
-      // Fallback
+      rethrowPrisma(e, `Beat con ID ${id} no encontrado.`);
     }
-    const mem = this.inMemoryTracks.find((t) => t.id === id);
-    if (!mem) throw new NotFoundException(`Beat con ID ${id} no encontrado.`);
-    mem.playsCount = (mem.playsCount ?? 0) + 1;
-    return { playsCount: mem.playsCount };
   }
 
   async remove(id: string): Promise<{ success: boolean }> {
     try {
       await this.prisma.track.delete({ where: { id } });
     } catch (e) {
-      // Fallback
+      rethrowPrisma(e, `Beat con ID ${id} no encontrado.`);
     }
-    this.inMemoryTracks = this.inMemoryTracks.filter((t) => t.id !== id);
     return { success: true };
   }
 
@@ -362,17 +241,10 @@ export class TracksService {
         ? {
             id: t.producer.id,
             name: t.producer.name,
-            email: t.producer.email,
             avatarUrl: t.producer.avatarUrl || null,
             artistName: t.producer.artistName || null,
           }
-        : {
-            id: t.producerId,
-            name: 'Oziris Producer',
-            email: 'producer@oziris.com',
-            avatarUrl: null,
-            artistName: null,
-          },
+        : undefined,
       createdAt:
         t.createdAt instanceof Date
           ? t.createdAt.toISOString()

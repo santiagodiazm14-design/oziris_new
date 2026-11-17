@@ -3,21 +3,70 @@ import {
   ForbiddenException,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { join, basename, resolve, sep } from 'path';
+import { existsSync, createReadStream } from 'fs';
+import { lookup } from 'dns/promises';
+import { isIP } from 'net';
+import { Readable } from 'stream';
+import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { TracksService } from '../tracks/tracks.service';
-import { join } from 'path';
-import { existsSync, createReadStream } from 'fs';
-import { Response } from 'express';
 import { SimulatedPurchaseDto } from './dto';
 
 export { SimulatedPurchaseDto };
 
+const MAX_REMOTE_BYTES = 150 * 1024 * 1024;
+const REMOTE_TIMEOUT_MS = 20_000;
+
+/** true si la IP es privada/loopback/link-local (destino prohibido para el proxy). */
+function isPrivateIp(ip: string): boolean {
+  if (ip.includes(':')) {
+    const v = ip.toLowerCase();
+    return (
+      v === '::1' ||
+      v === '::' ||
+      v.startsWith('fc') ||
+      v.startsWith('fd') ||
+      v.startsWith('fe80') ||
+      v.startsWith('::ffff:127.') ||
+      v.startsWith('::ffff:10.') ||
+      v.startsWith('::ffff:192.168.') ||
+      v.startsWith('::ffff:169.254.')
+    );
+  }
+  const [a, b] = ip.split('.').map(Number);
+  return (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 100 && b >= 64 && b <= 127)
+  );
+}
+
+async function assertPublicHost(rawUrl: string): Promise<URL> {
+  const url = new URL(rawUrl);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error('Protocolo no permitido');
+  }
+  const host = url.hostname.replace(/^\[|\]$/g, '');
+  const addrs = isIP(host)
+    ? [{ address: host }]
+    : await lookup(host, { all: true });
+  if (addrs.length === 0 || addrs.some((a) => isPrivateIp(a.address))) {
+    throw new Error('Destino no permitido');
+  }
+  return url;
+}
+
 @Injectable()
 export class PurchasesService {
-  private inMemoryPurchases: any[] = [];
-  private inMemorySimulations: any[] = [];
-  private inMemoryDownloads: any[] = [];
+  private readonly logger = new Logger(PurchasesService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -25,20 +74,23 @@ export class PurchasesService {
   ) {}
 
   /**
-   * Simula un pago y registra la compra/licencia para el usuario autenticado en la base de datos PostgreSQL.
-   * Todos los roles autenticados (USER, BUYER, PRODUCER, ADMIN) pueden simular compras.
+   * Simula un pago y registra la compra/licencia para el usuario autenticado.
+   * El monto siempre sale del precio del beat en la BD. Todo el carrito se
+   * guarda en una sola transacción (o se compra todo, o nada) y se usa un
+   * bloqueo por usuario+beat para que un doble clic no genere compras dobles.
    */
   async simulatePayment(
     userId: string,
-    userRole: string,
+    _userRole: string,
     dto: SimulatedPurchaseDto,
   ) {
-    const trackIdsToProcess: string[] =
+    const requested =
       dto.trackIds && dto.trackIds.length > 0
         ? dto.trackIds
         : dto.trackId
           ? [dto.trackId]
           : [];
+    const trackIdsToProcess = [...new Set(requested)];
 
     if (trackIdsToProcess.length === 0) {
       throw new BadRequestException(
@@ -48,35 +100,30 @@ export class PurchasesService {
 
     const paymentMethod = dto.paymentMethod || 'PSE';
     const licenseType = dto.licenseType || 'ESTÁNDAR COMERCIAL (MP3 HQ)';
-    const transactionId = `OZ-SIM-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    const transactionId = `OZ-SIM-${randomUUID()}`;
 
-    const completedPurchases: any[] = [];
-
-    for (const trackId of trackIdsToProcess) {
-      let track = null;
-      try {
-        track = await this.tracksService.findOne(trackId);
-      } catch (err) {
-        throw new NotFoundException(
-          `El beat con ID ${trackId} no fue encontrado.`,
-        );
+    const tracks = await this.prisma.track.findMany({
+      where: { id: { in: trackIdsToProcess } },
+    });
+    const byId = new Map(tracks.map((t) => [t.id, t]));
+    for (const id of trackIdsToProcess) {
+      if (!byId.has(id)) {
+        throw new NotFoundException(`El beat con ID ${id} no fue encontrado.`);
       }
+    }
 
-      // El monto SIEMPRE sale del precio del beat en base de datos (nunca del cliente).
-      const amount = track.price ?? 29.99;
+    const completedPurchases = await this.prisma.$transaction(async (tx) => {
+      const out: any[] = [];
+      for (const trackId of trackIdsToProcess) {
+        const track = byId.get(trackId)!;
+        // Bloqueo por (usuario, beat) hasta el final de la transacción
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId + ':' + trackId}))`;
 
-      try {
-        // Verificar si ya existe compra previa del mismo track por este usuario
-        const existing = await this.prisma.purchase.findFirst({
-          where: {
-            userId,
-            trackId,
-            status: 'COMPLETED',
-          },
+        const existing = await tx.purchase.findFirst({
+          where: { userId, trackId, status: 'COMPLETED' },
         });
-
         if (existing) {
-          completedPurchases.push({
+          out.push({
             id: existing.id,
             trackId,
             trackTitle: track.title,
@@ -84,7 +131,7 @@ export class PurchasesService {
             status: existing.status,
             paymentMethod: existing.paymentMethod || paymentMethod,
             licenseType: existing.licenseType || licenseType,
-            transactionId: existing.transactionId || transactionId,
+            transactionId: existing.transactionId,
             createdAt: existing.createdAt,
             downloadUrl: `/purchases/download/${trackId}`,
             alreadyOwned: true,
@@ -92,8 +139,8 @@ export class PurchasesService {
           continue;
         }
 
-        // Crear registro en la tabla Purchase y PaymentSimulation de PostgreSQL
-        const created = await this.prisma.purchase.create({
+        const amount = track.price;
+        const created = await tx.purchase.create({
           data: {
             userId,
             trackId,
@@ -101,7 +148,7 @@ export class PurchasesService {
             status: 'COMPLETED',
             paymentMethod,
             licenseType,
-            transactionId,
+            transactionId: `${transactionId}-${out.length + 1}`,
             payerName: dto.payerName || null,
             payerEmail: dto.payerEmail || null,
             payerPhone: dto.payerPhone || null,
@@ -113,7 +160,7 @@ export class PurchasesService {
                 : paymentMethod),
             simulation: {
               create: {
-                transactionId: `${transactionId}-${trackId.substring(0, 6)}`,
+                transactionId: `${transactionId}-SIM-${out.length + 1}`,
                 method: paymentMethod,
                 amount,
                 currency: 'USD',
@@ -125,20 +172,19 @@ export class PurchasesService {
                 bankName: dto.bankName || null,
                 personType: dto.personType || null,
                 cardHolder: dto.cardHolder || null,
-                cardLastFour: dto.cardLastFour || null,
+                // Nunca se guarda más de los últimos 4 dígitos
+                cardLastFour: dto.cardLastFour
+                  ? String(dto.cardLastFour).replace(/\D/g, '').slice(-4)
+                  : null,
                 phoneNumber: dto.phoneNumber || null,
                 metadata: dto.metadata ? dto.metadata : undefined,
                 userId,
               },
             },
           },
-          include: {
-            track: true,
-            simulation: true,
-          },
         });
 
-        completedPurchases.push({
+        out.push({
           id: created.id,
           trackId: created.trackId,
           trackTitle: track.title,
@@ -151,30 +197,9 @@ export class PurchasesService {
           downloadUrl: `/purchases/download/${trackId}`,
           alreadyOwned: false,
         });
-      } catch (dbError) {
-        console.error(
-          'Error guardando en PostgreSQL (fallback en memoria):',
-          dbError,
-        );
-        // Fallback en memoria si falla la BD
-        const fallbackPurchase = {
-          id: `sim-purch-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          userId,
-          trackId,
-          trackTitle: track.title,
-          amount,
-          status: 'COMPLETED',
-          paymentMethod,
-          licenseType,
-          transactionId,
-          createdAt: new Date().toISOString(),
-          downloadUrl: `/purchases/download/${trackId}`,
-          alreadyOwned: false,
-        };
-        this.inMemoryPurchases.push(fallbackPurchase);
-        completedPurchases.push(fallbackPurchase);
       }
-    }
+      return out;
+    });
 
     return {
       success: true,
@@ -188,143 +213,69 @@ export class PurchasesService {
     };
   }
 
-  /**
-   * Obtiene la lista de compras del usuario autenticado.
-   */
+  /** Lista de compras del usuario autenticado. */
   async getUserPurchases(userId: string) {
-    try {
-      const dbPurchases = await this.prisma.purchase.findMany({
-        where: {
-          userId,
-          status: 'COMPLETED',
-        },
-        include: {
-          track: {
-            include: {
-              producer: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  artistName: true,
-                  avatarUrl: true,
-                },
+    const dbPurchases = await this.prisma.purchase.findMany({
+      where: { userId, status: 'COMPLETED' },
+      include: {
+        track: {
+          include: {
+            producer: {
+              select: {
+                id: true,
+                name: true,
+                artistName: true,
+                avatarUrl: true,
               },
             },
           },
-          simulation: true,
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
 
-      if (dbPurchases && dbPurchases.length > 0) {
-        return dbPurchases.map((p) => ({
-          id: p.id,
-          trackId: p.trackId,
-          amount: p.amount,
-          status: p.status,
-          paymentMethod: p.paymentMethod || 'PSE',
-          licenseType: p.licenseType || 'ESTÁNDAR COMERCIAL',
-          transactionId: p.transactionId,
-          downloadCount: p.downloadCount,
-          lastDownloadedAt: p.lastDownloadedAt,
-          payerName: p.payerName,
-          payerEmail: p.payerEmail,
-          paymentProvider: p.paymentProvider,
-          createdAt: p.createdAt,
-          track: p.track,
-          downloadUrl: `/purchases/download/${p.trackId}`,
-        }));
-      }
-    } catch (err) {
-      console.error(
-        'Error consultando compras en DB (usando in-memory fallback):',
-        err,
-      );
-    }
-
-    // Fallback en memoria
-    const userMemoryPurchases = this.inMemoryPurchases.filter(
-      (p) => p.userId === userId,
-    );
-    const result = [];
-    for (const p of userMemoryPurchases) {
-      try {
-        const track = await this.tracksService.findOne(p.trackId);
-        result.push({
-          ...p,
-          trackId: p.trackId,
-          track,
-        });
-      } catch {
-        result.push(p);
-      }
-    }
-    return result;
+    return dbPurchases.map((p) => ({
+      id: p.id,
+      trackId: p.trackId,
+      amount: p.amount,
+      status: p.status,
+      paymentMethod: p.paymentMethod || 'PSE',
+      licenseType: p.licenseType || 'ESTÁNDAR COMERCIAL',
+      transactionId: p.transactionId,
+      downloadCount: p.downloadCount,
+      lastDownloadedAt: p.lastDownloadedAt,
+      payerName: p.payerName,
+      payerEmail: p.payerEmail,
+      paymentProvider: p.paymentProvider,
+      createdAt: p.createdAt,
+      track: p.track,
+      downloadUrl: `/purchases/download/${p.trackId}`,
+    }));
   }
 
-  /**
-   * Verifica si un usuario ya adquirió un beat específico o tiene permiso de descarga.
-   */
+  /** Verifica si un usuario ya adquirió un beat específico. */
   async checkPurchaseStatus(userId: string, trackId: string) {
-    try {
-      const purchase = await this.prisma.purchase.findFirst({
-        where: {
-          userId,
-          trackId,
-          status: 'COMPLETED',
-        },
-      });
-
-      if (purchase) {
-        return {
-          purchased: true,
-          purchaseId: purchase.id,
-          transactionId: purchase.transactionId,
-          paymentMethod: purchase.paymentMethod,
-          licenseType: purchase.licenseType,
-          purchasedAt: purchase.createdAt,
-          downloadCount: purchase.downloadCount,
-          lastDownloadedAt: purchase.lastDownloadedAt,
-          downloadUrl: `/purchases/download/${trackId}`,
-        };
-      }
-    } catch (err) {
-      // Check in-memory fallback
-    }
-
-    const inMem = this.inMemoryPurchases.find(
-      (p) =>
-        p.userId === userId &&
-        p.trackId === trackId &&
-        p.status === 'COMPLETED',
-    );
-
-    if (inMem) {
-      return {
-        purchased: true,
-        purchaseId: inMem.id,
-        transactionId: inMem.transactionId,
-        paymentMethod: inMem.paymentMethod,
-        licenseType: inMem.licenseType,
-        purchasedAt: inMem.createdAt,
-        downloadCount: inMem.downloadCount || 0,
-        lastDownloadedAt: inMem.lastDownloadedAt || null,
-        downloadUrl: `/purchases/download/${trackId}`,
-      };
-    }
-
+    const purchase = await this.prisma.purchase.findFirst({
+      where: { userId, trackId, status: 'COMPLETED' },
+    });
+    if (!purchase) return { purchased: false };
     return {
-      purchased: false,
+      purchased: true,
+      purchaseId: purchase.id,
+      transactionId: purchase.transactionId,
+      paymentMethod: purchase.paymentMethod,
+      licenseType: purchase.licenseType,
+      purchasedAt: purchase.createdAt,
+      downloadCount: purchase.downloadCount,
+      lastDownloadedAt: purchase.lastDownloadedAt,
+      downloadUrl: `/purchases/download/${trackId}`,
     };
   }
 
   /**
-   * Endpoint de entrega y descarga directa del archivo de audio del beat.
-   * Valida permisos (compra previa, productor del beat o administrador).
-   * Hace streaming directo del archivo (local o remoto) con headers de Content-Disposition y CORS.
+   * Entrega del archivo de audio. Valida permisos (compra, productor o ADMIN),
+   * registra la descarga y hace streaming del archivo local o remoto.
    */
   async handleDownload(
     userId: string,
@@ -333,18 +284,13 @@ export class PurchasesService {
     res: Response,
     meta?: { ipAddress?: string; userAgent?: string },
   ) {
-    let track = null;
+    let track;
     try {
       track = await this.tracksService.findOne(trackId);
     } catch {
       throw new NotFoundException(`El Beat con ID ${trackId} no existe.`);
     }
 
-    if (!track) {
-      throw new NotFoundException(`El Beat con ID ${trackId} no existe.`);
-    }
-
-    // Permitir descarga si el usuario compró el beat, o es el productor, o es ADMIN
     const isProducer = track.producerId === userId;
     const isAdmin = userRole === 'ADMIN';
     const purchaseStatus = await this.checkPurchaseStatus(userId, trackId);
@@ -355,50 +301,6 @@ export class PurchasesService {
       );
     }
 
-    // Registrar la descarga en la base de datos PostgreSQL
-    try {
-      await this.prisma.downloadLog.create({
-        data: {
-          userId,
-          trackId,
-          purchaseId: purchaseStatus.purchaseId || null,
-          ipAddress: meta?.ipAddress || null,
-          userAgent: meta?.userAgent || null,
-          fileFormat: 'MP3',
-        },
-      });
-
-      // Incrementar contador en Purchase si aplica
-      if (purchaseStatus.purchaseId) {
-        await this.prisma.purchase.update({
-          where: { id: purchaseStatus.purchaseId },
-          data: {
-            downloadCount: { increment: 1 },
-            lastDownloadedAt: new Date(),
-          },
-        });
-      }
-
-      // Incrementar contador de descargas en Track
-      await this.prisma.track.update({
-        where: { id: trackId },
-        data: {
-          downloadsCount: { increment: 1 },
-        },
-      });
-    } catch (logError) {
-      console.warn(
-        'Advertencia al registrar log de descarga en DB:',
-        logError?.message || logError,
-      );
-      this.inMemoryDownloads.push({
-        userId,
-        trackId,
-        purchaseId: purchaseStatus.purchaseId,
-        downloadedAt: new Date().toISOString(),
-      });
-    }
-
     const rawAudioUrl = track.fullAudioUrl || track.audioUrl;
     if (!rawAudioUrl) {
       throw new NotFoundException(
@@ -406,63 +308,81 @@ export class PurchasesService {
       );
     }
 
-    // Limpiar y preparar nombre del archivo descargable
+    // Registro de la descarga (atómico). Si falla, la descarga no se entrega
+    // a medias: el error se propaga en vez de ocultarse.
+    await this.prisma.$transaction([
+      this.prisma.downloadLog.create({
+        data: {
+          userId,
+          trackId,
+          purchaseId: purchaseStatus.purchaseId || null,
+          ipAddress: meta?.ipAddress
+            ? String(meta.ipAddress).slice(0, 64)
+            : null,
+          userAgent: meta?.userAgent
+            ? String(meta.userAgent).slice(0, 300)
+            : null,
+          fileFormat: 'MP3',
+        },
+      }),
+      ...(purchaseStatus.purchaseId
+        ? [
+            this.prisma.purchase.update({
+              where: { id: purchaseStatus.purchaseId },
+              data: {
+                downloadCount: { increment: 1 },
+                lastDownloadedAt: new Date(),
+              },
+            }),
+          ]
+        : []),
+      this.prisma.track.update({
+        where: { id: trackId },
+        data: { downloadsCount: { increment: 1 } },
+      }),
+    ]);
+
     const safeTitle = (track.title || 'beat')
       .replace(/[^a-zA-Z0-9_-]/g, '_')
       .toLowerCase();
     const downloadFilename = `OZIRIS_${safeTitle}_HQ.mp3`;
 
-    // 1. Si es un archivo local en uploads (por ruta relativa o URL local)
-    let localRelativePath: string | null = null;
-
-    if (
-      rawAudioUrl.startsWith('/uploads/') ||
-      rawAudioUrl.startsWith('uploads/')
-    ) {
-      localRelativePath = rawAudioUrl.startsWith('/')
-        ? rawAudioUrl.slice(1)
-        : rawAudioUrl;
-    } else if (rawAudioUrl.includes('/uploads/')) {
-      const parts = rawAudioUrl.split('/uploads/');
-      if (parts[1]) {
-        localRelativePath = `uploads/${parts[1]}`;
+    // 1. Archivo local en /uploads (solo dentro de la carpeta uploads)
+    if (/^(https?:\/\/[^/]+)?\/?uploads\//.test(rawAudioUrl)) {
+      const fileName = basename(rawAudioUrl.split('?')[0]);
+      const uploadsDir = resolve(process.cwd(), 'uploads');
+      const filePath = resolve(join(uploadsDir, fileName));
+      if (filePath.startsWith(uploadsDir + sep) && existsSync(filePath)) {
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${downloadFilename}"`,
+        );
+        res.setHeader(
+          'Content-Type',
+          fileName.toLowerCase().endsWith('.wav') ? 'audio/wav' : 'audio/mpeg',
+        );
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+        const stream = createReadStream(filePath);
+        stream.on('error', () => res.destroy());
+        return stream.pipe(res);
       }
     }
 
-    if (localRelativePath) {
-      const candidates = [
-        join(process.cwd(), localRelativePath),
-        join(process.cwd(), 'backend', localRelativePath),
-        join(__dirname, '..', '..', localRelativePath),
-      ];
-
-      for (const p of candidates) {
-        if (existsSync(p)) {
-          res.setHeader(
-            'Content-Disposition',
-            `attachment; filename="${downloadFilename}"`,
-          );
-          res.setHeader('Content-Type', 'audio/mpeg');
-          res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
-          const fileStream = createReadStream(p);
-          return fileStream.pipe(res);
-        }
-      }
-    }
-
-    // 2. Si es una URL externa (e.g. SoundHelix o CDN remoto), hacer streaming server-side para evitar bloqueos CORS
-    if (
-      rawAudioUrl.startsWith('http://') ||
-      rawAudioUrl.startsWith('https://')
-    ) {
+    // 2. URL externa: proxy con protecciones (sin redes internas, con límite
+    //    de tiempo y de tamaño).
+    if (/^https?:\/\//i.test(rawAudioUrl)) {
       try {
-        const remoteRes = await fetch(rawAudioUrl);
-        if (!remoteRes.ok) {
-          throw new Error(`Remote audio returned status ${remoteRes.status}`);
+        const url = await assertPublicHost(rawAudioUrl);
+        const remoteRes = await fetch(url, {
+          redirect: 'error',
+          signal: AbortSignal.timeout(REMOTE_TIMEOUT_MS),
+        });
+        if (!remoteRes.ok || !remoteRes.body) {
+          throw new Error(`El audio remoto respondió ${remoteRes.status}`);
         }
-
-        const arrayBuffer = await remoteRes.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        const len = Number(remoteRes.headers.get('content-length') || 0);
+        if (len > MAX_REMOTE_BYTES)
+          throw new Error('Archivo remoto demasiado grande');
 
         res.setHeader(
           'Content-Disposition',
@@ -472,16 +392,18 @@ export class PurchasesService {
           'Content-Type',
           remoteRes.headers.get('content-type') || 'audio/mpeg',
         );
-        res.setHeader('Content-Length', buffer.length);
+        if (len) res.setHeader('Content-Length', len);
         res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
-        return res.end(buffer);
+        const nodeStream = Readable.fromWeb(remoteRes.body as any);
+        nodeStream.on('error', () => res.destroy());
+        return nodeStream.pipe(res);
       } catch (proxyError) {
-        console.error(
-          'Error al hacer proxy/streaming del audio remoto:',
-          proxyError,
+        this.logger.error(
+          `Error al servir el audio remoto del beat ${trackId}: ${(proxyError as Error).message}`,
         );
-        // Como último recurso intentar redirección
-        return res.redirect(rawAudioUrl);
+        throw new NotFoundException(
+          'No se pudo obtener el archivo de audio del beat.',
+        );
       }
     }
 

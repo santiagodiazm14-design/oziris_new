@@ -1,13 +1,22 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class QueryTracksDto {
-  @ApiPropertyOptional({ example: 'Trap', description: 'Filtrar por género musical' })
+  @ApiPropertyOptional({
+    example: 'Trap',
+    description: 'Filtrar por género musical',
+  })
   genre?: string;
 
-  @ApiPropertyOptional({ example: 'dark', description: 'Buscar por título, descripción o tags' })
+  @ApiPropertyOptional({
+    example: 'dark',
+    description: 'Buscar por título, descripción o tags',
+  })
   search?: string;
 
-  @ApiPropertyOptional({ example: 'melodic', description: 'Filtrar por tag específico' })
+  @ApiPropertyOptional({
+    example: 'melodic',
+    description: 'Filtrar por tag específico',
+  })
   tag?: string;
 
   @ApiPropertyOptional({ example: 50, description: 'Precio máximo en USD' })

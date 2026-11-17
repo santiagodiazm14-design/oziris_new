@@ -1,18 +1,38 @@
-import { IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import {
+  IsEmail,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'Carlos López', description: 'Nombre completo del usuario' })
+  @ApiProperty({
+    example: 'Carlos López',
+    description: 'Nombre completo del usuario',
+  })
   @IsString()
   @MinLength(1)
   @MaxLength(100)
   name: string;
 
-  @ApiProperty({ example: 'carlos@oziris.test', description: 'Correo electrónico único' })
+  @ApiProperty({
+    example: 'carlos@oziris.test',
+    description: 'Correo electrónico único',
+  })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail({}, { message: 'Correo electrónico inválido.' })
   email: string;
 
-  @ApiProperty({ example: 'Password123!', description: 'Contraseña (mín. 6 caracteres)' })
+  @ApiProperty({
+    example: 'Password123!',
+    description: 'Contraseña (mín. 6 caracteres)',
+  })
   @IsString()
   @MinLength(6)
   @MaxLength(128)

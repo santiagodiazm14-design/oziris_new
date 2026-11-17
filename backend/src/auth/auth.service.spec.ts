@@ -9,7 +9,7 @@ import {
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -36,6 +36,9 @@ describe('AuthService', () => {
     };
 
     prismaService = {
+      $transaction: jest
+        .fn()
+        .mockImplementation((ops: any[]) => Promise.all(ops)),
       passwordReset: {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         create: jest.fn().mockResolvedValue({ id: 'reset-1' }),
@@ -156,7 +159,7 @@ describe('AuthService', () => {
       (usersService.findByEmailWithPassword as jest.Mock).mockResolvedValue({
         id: 'u-inactive',
         email: 'inactive@mail.com',
-        password: 'hashed',
+        password: await bcrypt.hash('password123', 4),
         isActive: false,
       });
 
@@ -239,8 +242,81 @@ describe('AuthService', () => {
       });
 
       const result = await authService.forgotPassword('user@mail.com');
-      expect(result).toHaveProperty('email', 'user@mail.com');
+      expect(result.message).toContain('Si el correo está registrado');
+      // No debe revelar si la cuenta existe
+      expect(result).not.toHaveProperty('email');
       expect(mailService.sendPasswordResetEmail).toHaveBeenCalled();
+
+      // El código se envía por correo pero en BD solo se guarda su hash
+      const sentCode = (mailService.sendPasswordResetEmail as jest.Mock).mock
+        .calls[0][1];
+      expect(sentCode).toMatch(/^\d{6}$/);
+      const stored =
+        prismaService.passwordReset.create.mock.calls[0][0].data.code;
+      expect(stored).not.toBe(sentCode);
+      expect(stored).toHaveLength(64);
+    });
+  });
+
+  describe('resetPassword / verifyResetCode', () => {
+    const sha = (v: string) =>
+      require('crypto').createHash('sha256').update(v).digest('hex');
+    const record = (over: any = {}) => ({
+      id: 'r1',
+      userId: 'u1',
+      code: sha('123456'),
+      attempts: 0,
+      used: false,
+      expiresAt: new Date(Date.now() + 60_000),
+      ...over,
+    });
+
+    it('un código incorrecto suma un intento', async () => {
+      prismaService.passwordReset.findFirst.mockResolvedValue(record());
+      await expect(
+        authService.verifyResetCode('a@b.co', '000000'),
+      ).rejects.toThrow(BadRequestException);
+      expect(prismaService.passwordReset.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { attempts: 1, used: false } }),
+      );
+    });
+
+    it('resetPassword TAMBIÉN cuenta intentos fallidos (anti fuerza bruta)', async () => {
+      prismaService.passwordReset.findFirst.mockResolvedValue(
+        record({ attempts: 4 }),
+      );
+      await expect(
+        authService.resetPassword('a@b.co', '000000', 'NuevaClave1'),
+      ).rejects.toThrow(BadRequestException);
+      expect(prismaService.passwordReset.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { attempts: 5, used: true } }),
+      );
+      expect(prismaService.user.update).not.toHaveBeenCalled();
+    });
+
+    it('rechaza un código expirado', async () => {
+      prismaService.passwordReset.findFirst.mockResolvedValue(
+        record({ expiresAt: new Date(Date.now() - 1000) }),
+      );
+      await expect(
+        authService.resetPassword('a@b.co', '123456', 'NuevaClave1'),
+      ).rejects.toThrow(/expirado/);
+    });
+
+    it('con el código correcto cambia la contraseña y consume los códigos', async () => {
+      prismaService.passwordReset.findFirst.mockResolvedValue(record());
+      const res = await authService.resetPassword(
+        'A@B.co',
+        '123456',
+        'NuevaClave1',
+      );
+      expect(res.message).toMatch(/restablecida/);
+      expect(prismaService.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'u1' } }),
+      );
+      expect(prismaService.passwordReset.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { email: 'a@b.co', used: false } }),
+      );
     });
   });
 
@@ -252,7 +328,12 @@ describe('AuthService', () => {
         email: 'a@b.co',
         password: hashed,
       });
-      const res = await authService.changePassword('u1', 'a@b.co', 'Actual123!', 'Nueva456!');
+      const res = await authService.changePassword(
+        'u1',
+        'a@b.co',
+        'Actual123!',
+        'Nueva456!',
+      );
       expect(res.message).toMatch(/actualizada/i);
       expect(prismaService.user.update).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: 'u1' } }),
