@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import {
   X,
@@ -61,13 +61,17 @@ export default function PaymentSimulationModal({
   const [simulationResult, setSimulationResult] = useState<PaymentSimulationResponse | null>(null);
   const [isDownloading, setIsDownloading] = useState<{ [trackId: string]: boolean }>({});
 
-  useEffect(() => {
+  // Reinicia el estado del modal cada vez que se abre (ajuste durante el render,
+  // en lugar de un efecto, para evitar un render extra).
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen) {
       setError(null);
       setSimulationResult(null);
       setIsProcessing(false);
     }
-  }, [isOpen]);
+  }
 
   if (!isOpen || itemsToBuy.length === 0) return null;
 
@@ -98,8 +102,8 @@ export default function PaymentSimulationModal({
       if (onSuccess) {
         onSuccess(res);
       }
-    } catch (err: any) {
-      setError(err.message || "Ocurrió un error al procesar la simulación de pago.");
+    } catch (err) {
+      setError((err as Error)?.message || "Ocurrió un error al procesar la simulación de pago.");
     } finally {
       setIsProcessing(false);
       setProcessingStep("");
@@ -111,8 +115,8 @@ export default function PaymentSimulationModal({
     try {
       setIsDownloading((prev) => ({ ...prev, [item.id]: true }));
       await downloadBeatFile(token, item.id, item.title);
-    } catch (err: any) {
-      showToast("error", err.message || "Error al descargar el archivo de audio.");
+    } catch (err) {
+      showToast("error", (err as Error)?.message || "Error al descargar el archivo de audio.");
     } finally {
       setIsDownloading((prev) => ({ ...prev, [item.id]: false }));
     }

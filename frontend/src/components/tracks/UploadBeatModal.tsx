@@ -43,27 +43,27 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
   const audioInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  // Generate audio preview URL when file changes
-  useEffect(() => {
-    if (audioFile) {
-      const url = URL.createObjectURL(audioFile);
-      setAudioPreviewUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else {
-      setAudioPreviewUrl(null);
-    }
-  }, [audioFile]);
+  // Al elegir/quitar un archivo se actualiza junto con su URL de previsualización.
+  const selectAudioFile = (file: File | null) => {
+    setAudioFile(file);
+    setAudioPreviewUrl(file ? URL.createObjectURL(file) : null);
+  };
 
-  // Generate cover preview URL when file changes
+  const selectCoverFile = (file: File | null) => {
+    setCoverFile(file);
+    setCoverPreviewUrl(file ? URL.createObjectURL(file) : null);
+  };
+
+  // Libera la URL anterior cuando cambia o al desmontar el modal.
   useEffect(() => {
-    if (coverFile) {
-      const url = URL.createObjectURL(coverFile);
-      setCoverPreviewUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else {
-      setCoverPreviewUrl(null);
-    }
-  }, [coverFile]);
+    if (!audioPreviewUrl) return;
+    return () => URL.revokeObjectURL(audioPreviewUrl);
+  }, [audioPreviewUrl]);
+
+  useEffect(() => {
+    if (!coverPreviewUrl) return;
+    return () => URL.revokeObjectURL(coverPreviewUrl);
+  }, [coverPreviewUrl]);
 
   if (!isOpen || !isArtist) return null;
 
@@ -93,7 +93,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
       return;
     }
 
-    setAudioFile(file);
+    selectAudioFile(file);
   };
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,7 +113,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
       return;
     }
 
-    setCoverFile(file);
+    selectCoverFile(file);
   };
 
   const togglePlayPreview = () => {
@@ -187,9 +187,9 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
         onClose();
       }, 1200);
 
-    } catch (err: any) {
+    } catch (err) {
       setIsSubmitting(false);
-      setErrorMessage(err.message || 'Ocurrió un error al intentar publicar el Beat.');
+      setErrorMessage((err as Error)?.message || 'Ocurrió un error al intentar publicar el Beat.');
     }
   };
 
@@ -267,7 +267,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
                     <button
                       type="button"
                       onClick={() => {
-                        setAudioFile(null);
+                        selectAudioFile(null);
                         setIsPlayingPreview(false);
                       }}
                       className="text-xs text-red-400 hover:underline"
@@ -365,7 +365,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
                   </div>
                   <button
                     type="button"
-                    onClick={() => setCoverFile(null)}
+                    onClick={() => selectCoverFile(null)}
                     className="text-xs text-red-400 hover:underline"
                   >
                     Quitar

@@ -23,6 +23,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { simulatePaymentApi, downloadBeatFile, fetchTrackById, Track } from "@/services/api";
+import type { PaymentSimulationResponse } from "@/types";
 
 function DatosPagoContent() {
   const searchParams = useSearchParams();
@@ -50,10 +51,13 @@ function DatosPagoContent() {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [transactionData, setTransactionData] = useState<any>(null);
+  const [transactionData, setTransactionData] = useState<PaymentSimulationResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Prellena el formulario cuando el usuario termina de cargar (ajuste durante el render).
+  const [prefilledUser, setPrefilledUser] = useState(user);
+  if (user !== prefilledUser) {
+    setPrefilledUser(user);
     if (user) {
       setFormData((prev) => ({
         ...prev,
@@ -62,7 +66,7 @@ function DatosPagoContent() {
         titularTarjeta: prev.titularTarjeta || user.name || "",
       }));
     }
-  }, [user]);
+  }
 
   useEffect(() => {
     async function loadTrack() {
@@ -119,8 +123,8 @@ function DatosPagoContent() {
       });
 
       setTransactionData(res);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Error al procesar la simulación de pago.");
+    } catch (err) {
+      setErrorMsg((err as Error)?.message || "Error al procesar la simulación de pago.");
     } finally {
       setIsProcessing(false);
     }
@@ -131,8 +135,8 @@ function DatosPagoContent() {
     try {
       setIsDownloading(true);
       await downloadBeatFile(token, beatId, track?.title || "Beat_Oziris");
-    } catch (err: any) {
-      showToast("error", err.message || "Error al descargar el archivo de audio.");
+    } catch (err) {
+      showToast("error", (err as Error)?.message || "Error al descargar el archivo de audio.");
     } finally {
       setIsDownloading(false);
     }

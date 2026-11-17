@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedToken = localStorage.getItem(TOKEN_KEY);
       const storedUser = localStorage.getItem(USER_KEY);
       if (storedToken && storedUser) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratar la sesión desde localStorage tras montar (no disponible en SSR)
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
       }

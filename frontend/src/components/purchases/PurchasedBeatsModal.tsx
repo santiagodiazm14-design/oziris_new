@@ -47,24 +47,25 @@ export default function PurchasedBeatsModal({
     message: string;
   } | null>(null);
 
-  useEffect(() => {
-    if (isOpen && token) {
-      loadPurchases();
-    }
-  }, [isOpen, token]);
-
   const loadPurchases = async () => {
     if (!token) return;
     try {
       setIsLoading(true);
       const data = await fetchMyPurchasesApi(token);
       setPurchases(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error al cargar beats adquiridos:", err);
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen && token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- carga de datos desde la API al abrir el modal
+      loadPurchases();
+    }
+  }, [isOpen, token]);
 
   const showNotification = (type: "success" | "error", message: string) => {
     setNotification({ type, message });
@@ -77,8 +78,8 @@ export default function PurchasedBeatsModal({
       setDownloadingId(trackId);
       await downloadBeatFile(token, trackId, trackTitle);
       showNotification("success", `¡Descarga de "${trackTitle || "Beat"}" iniciada!`);
-    } catch (err: any) {
-      showNotification("error", err.message || "Error al descargar el archivo de audio.");
+    } catch (err) {
+      showNotification("error", (err as Error)?.message || "Error al descargar el archivo de audio.");
     } finally {
       setDownloadingId(null);
     }

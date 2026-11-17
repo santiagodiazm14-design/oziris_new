@@ -31,6 +31,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const savedCart = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (savedCart) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratar el carrito desde localStorage tras montar (no disponible en SSR)
         setCartItems(JSON.parse(savedCart));
       }
     } catch (e) {
