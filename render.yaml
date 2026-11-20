@@ -1,0 +1,46 @@
+# Blueprint de Render para OZIRIS: base de datos + backend (NestJS) + frontend (Next.js).
+# Uso: Render Dashboard -> New -> Blueprint -> elegir este repo.
+# Las variables con sync:false se piden en el dashboard (secretos / URLs que aun no existen).
+databases:
+  - name: oziris-db
+    plan: free
+    databaseName: oziris_db
+    user: oziris
+
+services:
+  - type: web
+    name: oziris-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    # --include=dev: nest/prisma/typescript son devDependencies y hacen falta para compilar.
+    buildCommand: npm install --include=dev && npx prisma generate && npm run build
+    preDeployCommand: npx prisma migrate deploy
+    startCommand: npm run start:prod
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: oziris-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true # Render genera un valor aleatorio largo
+      - key: FRONTEND_URL
+        sync: false # URL del frontend, sin "/" final (ej. https://oziris-web.onrender.com)
+      - key: MAIL_USER
+        sync: false
+      - key: MAIL_PASS
+        sync: false
+
+  - type: web
+    name: oziris-web
+    runtime: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false # URL del backend (ej. https://oziris-api.onrender.com); se fija al compilar
