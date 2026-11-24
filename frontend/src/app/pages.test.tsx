@@ -5,8 +5,9 @@ import userEvent from '@testing-library/user-event';
 import type { PublicArtist, Track, User } from '@/types';
 
 // ---- mocks -------------------------------------------------------------
+const routerPush = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: routerPush }),
 }));
 
 const authState: {
@@ -39,11 +40,6 @@ vi.mock('@/context/PlayerContext', () => ({
 const toggleFavorite = vi.fn();
 vi.mock('@/context/FavoritesContext', () => ({
   useFavorites: () => ({ isFavorite: () => false, toggleFavorite }),
-}));
-
-vi.mock('@/components/checkout/PaymentSimulationModal', () => ({
-  default: ({ isOpen, track }: { isOpen: boolean; track?: Track | null }) =>
-    isOpen ? <div data-testid="payment-modal">Pagando {track?.title}</div> : null,
 }));
 
 const api = vi.hoisted(() => ({
@@ -101,6 +97,7 @@ beforeEach(() => {
   Object.values(api).forEach((m) => m.mockReset());
   authState.updateCurrentUser = vi.fn();
   showToast.mockClear();
+  routerPush.mockClear();
   playTrack.mockClear();
   toggleFavorite.mockClear();
   api.fetchMyPurchasesApi.mockResolvedValue([]);
@@ -363,7 +360,7 @@ describe('Página /artista/[id]', () => {
     expect(playTrack).toHaveBeenCalledWith(tracks[0], tracks);
 
     await user.click(within(row).getByRole('button', { name: /\$25\.00/ }));
-    expect(screen.getByTestId('payment-modal')).toHaveTextContent('Pagando Dark Night');
+    expect(routerPush).toHaveBeenCalledWith(`/checkout?beats=${tracks[0].id}`);
   });
 
   it('un visitante sin sesión recibe un aviso en vez de comprar', async () => {
@@ -374,7 +371,7 @@ describe('Página /artista/[id]', () => {
     const row = screen.getByText('Dark Night').closest('li') as HTMLElement;
     await user.click(within(row).getByRole('button', { name: /\$25\.00/ }));
     expect(showToast).toHaveBeenCalledWith('info', expect.stringMatching(/Inicia sesión/));
-    expect(screen.queryByTestId('payment-modal')).not.toBeInTheDocument();
+    expect(routerPush).not.toHaveBeenCalled();
   });
 
   it('un administrador no puede comprar', async () => {
@@ -385,7 +382,7 @@ describe('Página /artista/[id]', () => {
     const row = screen.getByText('Dark Night').closest('li') as HTMLElement;
     await user.click(within(row).getByRole('button', { name: /\$25\.00/ }));
     expect(showToast).toHaveBeenCalledWith('info', expect.stringMatching(/administrador/i));
-    expect(screen.queryByTestId('payment-modal')).not.toBeInTheDocument();
+    expect(routerPush).not.toHaveBeenCalled();
   });
 
   it('si ya compró el beat muestra Descargar', async () => {

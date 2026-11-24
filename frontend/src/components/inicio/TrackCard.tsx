@@ -20,6 +20,8 @@ interface TrackCardProps {
   onDownload: (track: Track) => void;
   onBuy: (track: Track) => void;
   isInCart: boolean;
+  /** Resalta la tarjeta (al llegar desde la busqueda). */
+  highlighted?: boolean;
 }
 
 export default function TrackCard({
@@ -35,6 +37,7 @@ export default function TrackCard({
   onDownload,
   onBuy,
   isInCart,
+  highlighted = false,
 }: TrackCardProps) {
   const coverPath = track.coverUrl
     ? track.coverUrl.startsWith("http")
@@ -43,7 +46,15 @@ export default function TrackCard({
     : null;
 
   return (
-    <div className="group relative bg-[#0f151c]/90 border border-emerald-500/10 hover:border-emerald-500/35 rounded-2xl p-4 transition-all duration-300 hover:shadow-[0_12px_35px_rgba(16,185,129,0.12)] hover:-translate-y-1 flex flex-col justify-between backdrop-blur-sm">
+    <div
+      id={`beat-${track.id}`}
+      data-highlighted={highlighted ? "true" : undefined}
+      className={`group relative bg-[#0f151c]/90 border rounded-2xl p-4 transition-all duration-300 hover:shadow-[0_12px_35px_rgba(16,185,129,0.12)] hover:-translate-y-1 flex flex-col justify-between backdrop-blur-sm scroll-mt-40 ${
+        highlighted
+          ? "border-emerald-400 ring-2 ring-emerald-400/70 shadow-[0_0_35px_rgba(16,185,129,0.45)] scale-[1.02]"
+          : "border-emerald-500/10 hover:border-emerald-500/35"
+      }`}
+    >
       {/* INFORMACIÓN PRINCIPAL */}
       <div className="flex gap-4 items-start">
         {/* COVER */}

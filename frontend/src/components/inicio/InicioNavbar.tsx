@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Menu,
   Search,
@@ -22,6 +23,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import SearchSuggestions, { type SuggestionItem } from "./SearchSuggestions";
+import { useSearchSuggestions } from "./useSearchSuggestions";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -44,6 +47,8 @@ interface InicioNavbarProps {
   purchasedTrackIds: string[];
   favoritesCount: number;
   openFavorites: () => void;
+  /** Al elegir un beat de las sugerencias: ir hasta ese beat en el catalogo. */
+  onSelectBeat?: (beatId: string) => void;
 }
 
 export default function InicioNavbar({
@@ -65,9 +70,118 @@ export default function InicioNavbar({
   purchasedTrackIds,
   favoritesCount,
   openFavorites,
+  onSelectBeat,
 }: InicioNavbarProps) {
   const { user, isAuthenticated, isAdmin, isArtist } = useAuth();
   const { cartCount, toggleCart } = useCart();
+  const router = useRouter();
+
+  // ----- Autocompletado de artistas y beats -----
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(-1);
+  // Solo el campo en uso (escritorio o movil) muestra el desplegable
+  const [searchField, setSearchField] = useState<"desktop" | "mobile">("desktop");
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
+  const { artists, beats, loading, failed, resolved } = useSearchSuggestions(
+    searchQuery,
+    suggestOpen,
+  );
+  const suggestionItems: SuggestionItem[] = [
+    ...artists.map((data) => ({ type: "artist" as const, data })),
+    ...beats.map((data) => ({ type: "beat" as const, data })),
+  ];
+  const showSuggestions = suggestOpen && searchQuery.trim().length > 0;
+
+  // Cierra el desplegable al hacer clic fuera de la barra
+  useEffect(() => {
+    if (!suggestOpen) return;
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        !desktopSearchRef.current?.contains(target) &&
+        !mobileSearchRef.current?.contains(target)
+      ) {
+        setSuggestOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [suggestOpen]);
+
+  const handleSearchChange = (value: string, field: "desktop" | "mobile") => {
+    setSearchQuery(value);
+    setSearchField(field);
+    setSuggestOpen(true);
+    setActiveIdx(-1);
+  };
+
+  const pickSuggestion = (item: SuggestionItem) => {
+    setSuggestOpen(false);
+    setActiveIdx(-1);
+    if (item.type === "artist") {
+      router.push(`/artista/${item.data.id}`);
+    } else if (onSelectBeat) {
+      // La pagina baja hasta el beat y lo resalta
+      onSelectBeat(item.data.id);
+    } else {
+      setSearchQuery(item.data.title);
+    }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      setSuggestOpen(false);
+      setActiveIdx(-1);
+      return;
+    }
+    if (!showSuggestions || suggestionItems.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIdx((i) => (i + 1) % suggestionItems.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIdx((i) => (i <= 0 ? suggestionItems.length - 1 : i - 1));
+    } else if (e.key === "Enter" && activeIdx >= 0) {
+      e.preventDefault();
+      pickSuggestion(suggestionItems[activeIdx]);
+    } else if (e.key === "Enter") {
+      setSuggestOpen(false);
+    }
+  };
+
+  const comboProps = (listId: string, field: "desktop" | "mobile") => ({
+    role: "combobox" as const,
+    "aria-expanded": showSuggestions && searchField === field,
+    "aria-controls": listId,
+    "aria-autocomplete": "list" as const,
+    "aria-activedescendant":
+      showSuggestions && searchField === field && activeIdx >= 0
+        ? `${listId}-opt-${activeIdx}`
+        : undefined,
+    autoComplete: "off",
+    onFocus: () => {
+      setSearchField(field);
+      if (searchQuery.trim()) setSuggestOpen(true);
+    },
+    onKeyDown: handleSearchKeyDown,
+  });
+
+  const suggestionsPanel = (listId: string, field: "desktop" | "mobile") =>
+    showSuggestions && searchField === field ? (
+      <SearchSuggestions
+        id={listId}
+        query={searchQuery}
+        artists={artists}
+        beats={beats}
+        loading={loading}
+        failed={failed}
+        resolved={resolved}
+        activeIndex={activeIdx}
+        onHover={setActiveIdx}
+        onPick={pickSuggestion}
+      />
+    ) : null;
 
   return (
     <header className="border-b border-emerald-500/15 sticky top-0 bg-[#090d10]/95 backdrop-blur-2xl z-30 shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
@@ -121,19 +235,27 @@ export default function InicioNavbar({
 
         {/* CENTER: SEARCH BAR */}
         <div className="flex-1 max-w-xl hidden md:flex">
-          <div className="w-full relative flex items-center bg-[#10171e] border border-emerald-500/20 rounded-full focus-within:border-emerald-400 focus-within:shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all">
+          <div
+            ref={desktopSearchRef}
+            className="w-full relative flex items-center bg-[#10171e] border border-emerald-500/20 rounded-full focus-within:border-emerald-400 focus-within:shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all"
+          >
             <Search className="w-4 h-4 text-emerald-400 absolute left-4" />
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Busca por género, BPM, artista o tag (Drake, Trap, Drill)..."
+              onChange={(e) => handleSearchChange(e.target.value, "desktop")}
+              {...comboProps("search-suggestions-desktop", "desktop")}
+              aria-label="Buscar artistas y beats"
+              placeholder="Busca artistas, beats, género o tag (Drake, Trap, Drill)..."
               className="w-full bg-transparent border-none py-2 pl-10 pr-28 text-sm text-white placeholder-zinc-500 focus:outline-none"
             />
 
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={() => {
+                  setSearchQuery("");
+                  setSuggestOpen(false);
+                }}
                 type="button"
                 className="p-1 text-zinc-400 hover:text-white mr-1 cursor-pointer"
                 title="Limpiar búsqueda"
@@ -177,6 +299,8 @@ export default function InicioNavbar({
                 </div>
               )}
             </div>
+
+            {suggestionsPanel("search-suggestions-desktop", "desktop")}
           </div>
         </div>
 
@@ -300,24 +424,34 @@ export default function InicioNavbar({
 
       {/* MOBILE SEARCH BAR */}
       <div className="md:hidden px-4 pb-3 pt-1">
-        <div className="relative flex items-center bg-[#10171e] border border-emerald-500/20 rounded-full">
+        <div
+          ref={mobileSearchRef}
+          className="relative flex items-center bg-[#10171e] border border-emerald-500/20 rounded-full"
+        >
           <Search className="w-4 h-4 text-emerald-400 absolute left-3.5" />
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar beats, género, productor..."
+            onChange={(e) => handleSearchChange(e.target.value, "mobile")}
+            {...comboProps("search-suggestions-mobile", "mobile")}
+            aria-label="Buscar artistas y beats"
+            placeholder="Buscar artistas, beats, género..."
             className="w-full bg-transparent border-none py-2 pl-9 pr-9 text-xs text-white placeholder-zinc-500 focus:outline-none"
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery("")}
+              onClick={() => {
+                setSearchQuery("");
+                setSuggestOpen(false);
+              }}
               type="button"
               className="p-1 text-zinc-400 hover:text-white absolute right-2.5 cursor-pointer"
+              aria-label="Limpiar búsqueda"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
+          {suggestionsPanel("search-suggestions-mobile", "mobile")}
         </div>
       </div>
 

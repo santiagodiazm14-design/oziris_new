@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   Grid,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import {
   fetchTracks,
+  fetchTrackById,
   Track,
   fetchMyPurchasesApi,
   downloadBeatFile,
@@ -20,7 +22,7 @@ import {
 import UploadBeatModal from "@/components/tracks/UploadBeatModal";
 import PurchasedBeatsModal from "@/components/purchases/PurchasedBeatsModal";
 import FavoritesDrawer from "@/components/favorites/FavoritesDrawer";
-import PaymentSimulationModal from "@/components/checkout/PaymentSimulationModal";
+import { beatsCheckoutUrl } from "@/lib/checkoutParams";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { usePlayer } from "@/context/PlayerContext";
@@ -102,6 +104,7 @@ const GENRE_FILTERS = [
 ];
 
 export default function InicioPage() {
+  const router = useRouter();
   const { isInCart } = useCart();
   const { user, isAuthenticated, isAdmin, isArtist, logout } = useAuth();
   const { currentTrack, isPlaying: isPlayerPlaying, playTrack } = usePlayer();
@@ -132,11 +135,16 @@ export default function InicioPage() {
   const [searchFilterType, setSearchFilterType] = useState<string>("Beats");
   const [showSearchTypeDropdown, setShowSearchTypeDropdown] = useState(false);
 
+  // "Llevame a ese beat": id a buscar en la lista, y el que se resalta un momento
+  const [focusTrackId, setFocusTrackId] = useState<string | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  // Filtros con los que se cargo el catalogo por ultima vez
+  const filtersKey = JSON.stringify([searchQuery, selectedGenre, selectedCategory, selectedTag, selectedSort]);
+  const [loadedKey, setLoadedKey] = useState("");
+
   // Errors, purchases, downloads
   const [audioError, setAudioError] = useState<string | null>(null);
   const [purchasedTrackIds, setPurchasedTrackIds] = useState<string[]>([]);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [selectedTrackForPayment, setSelectedTrackForPayment] = useState<Track | null>(null);
   const [downloadingTrackId, setDownloadingTrackId] = useState<string | null>(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("oziris_auth_token") : null;
@@ -158,6 +166,7 @@ export default function InicioPage() {
   };
 
   const loadCatalog = async () => {
+    const requestKey = filtersKey;
     try {
       setIsLoadingTracks(true);
       const data = await fetchTracks({
@@ -172,6 +181,7 @@ export default function InicioPage() {
       console.error("Error al cargar catálogo de Beats:", err);
     } finally {
       setIsLoadingTracks(false);
+      setLoadedKey(requestKey);
     }
   };
 
@@ -199,6 +209,45 @@ export default function InicioPage() {
     setSelectedSort("newest");
   };
 
+  // Elegir un beat en la busqueda: limpia los filtros para que aparezca en la
+  // lista completa, baja hasta el y lo resalta.
+  const handleSelectBeat = (beatId: string) => {
+    setSearchFilterType("Beats");
+    clearAllFilters();
+    setFocusTrackId(beatId);
+  };
+
+  useEffect(() => {
+    // Espera a que el catalogo ya este cargado con los filtros limpios
+    if (!focusTrackId || isLoadingTracks || loadedKey !== filtersKey) return;
+
+    if (!tracks.some((t) => t.id === focusTrackId)) {
+      // No esta entre los beats cargados: se trae y se pone al inicio
+      let cancelled = false;
+      fetchTrackById(focusTrackId)
+        .then((found) => {
+          if (!cancelled) setTracks((prev) => (prev.some((t) => t.id === found.id) ? prev : [found, ...prev]));
+        })
+        .catch(() => {
+          if (!cancelled) setFocusTrackId(null);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    document.getElementById(`beat-${focusTrackId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- el destino ya se alcanzo
+    setHighlightedId(focusTrackId);
+    setFocusTrackId(null);
+  }, [focusTrackId, isLoadingTracks, loadedKey, filtersKey, tracks]);
+
+  useEffect(() => {
+    if (!highlightedId) return;
+    const timer = setTimeout(() => setHighlightedId(null), 2800);
+    return () => clearTimeout(timer);
+  }, [highlightedId]);
+
   const hasActiveFilters = Boolean(
     searchQuery || selectedGenre || (selectedCategory && selectedCategory !== "rankings") || selectedTag
   );
@@ -224,8 +273,8 @@ export default function InicioPage() {
       setAudioError("Debes iniciar sesión para comprar y descargar beats.");
       return;
     }
-    setSelectedTrackForPayment(track);
-    setIsPaymentModalOpen(true);
+    // Toda compra pasa por la pasarela de pago (resumen -> datos -> pago -> descarga)
+    router.push(beatsCheckoutUrl([track.id]));
   };
 
   return (
@@ -267,6 +316,7 @@ export default function InicioPage() {
         purchasedTrackIds={purchasedTrackIds}
         favoritesCount={favorites.length}
         openFavorites={openFavorites}
+        onSelectBeat={handleSelectBeat}
       />
 
       {/* HERO SHOWCASE */}
@@ -348,6 +398,7 @@ export default function InicioPage() {
                 onDownload={handleDownloadTrack}
                 onBuy={handleBuyTrack}
                 isInCart={isInCart(track.id)}
+                highlighted={highlightedId === track.id}
               />
             ))}
           </div>
@@ -401,19 +452,6 @@ export default function InicioPage() {
         onPlayTrack={handlePlayTrack}
         currentlyPlayingId={currentTrack?.id || null}
         isPlaying={isPlayerPlaying}
-      />
-
-      {/* MODAL: SIMULACIÓN DE PAGO */}
-      <PaymentSimulationModal
-        isOpen={isPaymentModalOpen}
-        onClose={() => {
-          setIsPaymentModalOpen(false);
-          setSelectedTrackForPayment(null);
-        }}
-        track={selectedTrackForPayment}
-        onSuccess={() => {
-          loadUserPurchases();
-        }}
       />
     </div>
   );

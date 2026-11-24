@@ -24,6 +24,7 @@ import {
   PlayCircle,
 } from "lucide-react";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import PlanSection from "@/components/profile/PlanSection";
 import { useAuth } from "@/context/AuthContext";
 import type { User } from "@/types";
 import {
@@ -615,6 +616,9 @@ function ProfileForm({ user }: { user: User }) {
               habilitada exclusivamente para perfiles de Artista.
             </div>
           )}
+
+          {/* MI PLAN (solo artistas) */}
+          {isArtist && !isAdmin && <PlanSection onNotify={showNotification} />}
 
           {/* SEGURIDAD */}
           <Section

@@ -6,6 +6,8 @@ import Image from "next/image";
 import { X, Trash2, ShoppingBag, ArrowRight, Music2, ShieldCheck } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 
+import { beatsCheckoutUrl } from "@/lib/checkoutParams";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 function getImageUrl(url?: string): string | null {
@@ -27,7 +29,7 @@ export default function CartDrawer() {
     }).format(price);
   };
 
-  const checkoutUrl = cartItems.length > 0 ? `/checkout?beat=${cartItems[0].id}` : "/inicio";
+  const checkoutUrl = cartItems.length > 0 ? beatsCheckoutUrl(cartItems.map((item) => item.id)) : "/inicio";
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">

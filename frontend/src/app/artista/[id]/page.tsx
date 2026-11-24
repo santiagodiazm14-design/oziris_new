@@ -2,6 +2,7 @@
 
 import React, { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -34,7 +35,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePlayer } from "@/context/PlayerContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { useToast } from "@/context/ToastContext";
-import PaymentSimulationModal from "@/components/checkout/PaymentSimulationModal";
+import { beatsCheckoutUrl } from "@/lib/checkoutParams";
 import EditBeatModal from "@/components/tracks/EditBeatModal";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -60,6 +61,7 @@ function formatCount(n: number): string {
 
 export default function ArtistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const { user, token, isAuthenticated, isAdmin } = useAuth();
   const { currentTrack, isPlaying, playTrack } = usePlayer();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -72,7 +74,6 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
 
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [trackToPay, setTrackToPay] = useState<Track | null>(null);
   const [trackToEdit, setTrackToEdit] = useState<Track | null>(null);
 
   const isOwner = !!user && user.id === id;
@@ -126,7 +127,8 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
   const handleBuy = (track: Track) => {
     if (isAdmin) return showToast("info", "Las cuentas de administrador no pueden comprar beats.");
     if (!isAuthenticated) return showToast("info", "Inicia sesión para comprar y descargar beats.");
-    setTrackToPay(track);
+    // Toda compra pasa por la pasarela de pago (resumen -> datos -> pago -> descarga)
+    router.push(beatsCheckoutUrl([track.id]));
   };
 
   const handleDownload = async (track: Track) => {
@@ -411,15 +413,6 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
           )}
         </section>
       </main>
-
-      <PaymentSimulationModal
-        isOpen={!!trackToPay}
-        onClose={() => setTrackToPay(null)}
-        track={trackToPay}
-        onSuccess={() => {
-          loadPurchases();
-        }}
-      />
 
       {trackToEdit && (
         <EditBeatModal

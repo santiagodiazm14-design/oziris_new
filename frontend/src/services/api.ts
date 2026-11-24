@@ -6,3 +6,5 @@ export * from './userService';
 export * from './trackService';
 export * from './adminService';
 export * from './purchasesService';
+export * from './subscriptionService';
+export * from './searchService';

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   User,
@@ -10,7 +10,6 @@ import {
   Phone,
   CreditCard,
   Building2,
-  Smartphone,
   ShieldCheck,
   Lock,
   ShoppingBag,
@@ -18,23 +17,44 @@ import {
   Download,
   Loader2,
   AlertTriangle,
-  BadgeCheck,
+  Crown,
+  Music2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
-import { simulatePaymentApi, downloadBeatFile, fetchTrackById, Track } from "@/services/api";
-import type { PaymentSimulationResponse } from "@/types";
+import {
+  simulatePaymentApi,
+  simulateSubscriptionApi,
+  downloadBeatFile,
+  fetchTrackById,
+  fetchPlansApi,
+  Track,
+} from "@/services/api";
+import type { PaymentSimulationResponse, PlanInfo, SubscriptionSimulationResponse } from "@/types";
+import PaymentStepper from "@/components/checkout/PaymentStepper";
+import { formatCop, parseCheckoutTarget, beatsCheckoutUrl, planCheckoutUrl } from "@/lib/checkoutParams";
+
+const PROCESSING_STEPS = [
+  "Validando tus datos",
+  "Autorizando el pago con tu banco",
+  "Generando tu licencia",
+];
+const STEP_MS = 800;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function DatosPagoContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const { user, token, isAuthenticated, isAdmin } = useAuth();
+  const { user, token, isAuthenticated, isAdmin, isLoading } = useAuth();
+  const { removeFromCart } = useCart();
   const { showToast } = useToast();
 
   const metodo = searchParams.get("metodo") || "PSE";
-  const beatId = searchParams.get("beat") || "";
+  const target = useMemo(() => parseCheckoutTarget(searchParams), [searchParams]);
+  const targetKey = JSON.stringify(target);
 
-  const [track, setTrack] = useState<Track | null>(null);
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [plan, setPlan] = useState<PlanInfo | null>(null);
   const [formData, setFormData] = useState({
     nombre: user?.name || "",
     documento: "",
@@ -50,8 +70,10 @@ function DatosPagoContent() {
   });
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [processingIdx, setProcessingIdx] = useState(0);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [transactionData, setTransactionData] = useState<PaymentSimulationResponse | null>(null);
+  const [subscriptionData, setSubscriptionData] = useState<SubscriptionSimulationResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Prellena el formulario cuando el usuario termina de cargar (ajuste durante el render).
@@ -68,22 +90,44 @@ function DatosPagoContent() {
     }
   }
 
+  // Carga lo que se esta pagando (beats o plan)
   useEffect(() => {
-    async function loadTrack() {
-      if (beatId) {
-        try {
-          const t = await fetchTrackById(beatId);
-          setTrack(t);
-        } catch {}
+    let cancelled = false;
+    async function load() {
+      const t = JSON.parse(targetKey) as ReturnType<typeof parseCheckoutTarget>;
+      try {
+        if (t.kind === "beats") {
+          const found = await Promise.all(t.ids.map((id) => fetchTrackById(id)));
+          if (!cancelled) setTracks(found);
+        } else if (t.kind === "plan") {
+          const plans = await fetchPlansApi();
+          if (!cancelled) setPlan(plans.find((p) => p.id === t.plan) || null);
+        }
+      } catch {
+        if (!cancelled) setErrorMsg("No fue posible cargar los datos de tu compra.");
       }
     }
-    loadTrack();
-  }, [beatId]);
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [targetKey]);
 
-  const actualizarCampo = (
-    campo: string,
-    valor: string
-  ) => {
+  const planTotal =
+    plan && target.kind === "plan"
+      ? target.period === "YEARLY"
+        ? plan.priceYearly
+        : plan.priceMonthly
+      : 0;
+  const total = target.kind === "plan" ? planTotal : tracks.reduce((s, t) => s + (t.price || 0), 0);
+  const backUrl =
+    target.kind === "plan"
+      ? planCheckoutUrl(target.plan, target.period)
+      : target.kind === "beats"
+        ? beatsCheckoutUrl(target.ids)
+        : "/inicio";
+
+  const actualizarCampo = (campo: string, valor: string) => {
     setFormData((prev) => ({
       ...prev,
       [campo]: valor,
@@ -93,52 +137,87 @@ function DatosPagoContent() {
   const enviarFormulario = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAuthenticated || !token) {
-      setErrorMsg("Debes iniciar sesión para completar la simulación de pago.");
+      setErrorMsg("Debes iniciar sesión para completar el pago.");
+      return;
+    }
+    if (isAdmin) {
+      setErrorMsg("El rol Administrador no puede realizar pagos.");
+      return;
+    }
+    if (target.kind === "none") {
+      setErrorMsg("No se especificó qué deseas pagar.");
       return;
     }
 
-    if (!beatId) {
-      setErrorMsg("No se especificó un Beat válido.");
-      return;
-    }
+    const payer = {
+      payerName: formData.nombre,
+      payerEmail: formData.correo,
+      payerPhone: formData.telefono,
+      payerDocument: formData.documento,
+    };
+    const cardLastFour = formData.numeroTarjeta ? formData.numeroTarjeta.slice(-4) : undefined;
 
     try {
       setErrorMsg(null);
+      setProcessingIdx(0);
       setIsProcessing(true);
 
-      const res = await simulatePaymentApi(token, {
-        trackId: beatId,
-        paymentMethod: metodo,
-        licenseType: "ESTÁNDAR COMERCIAL (MP3 HQ)",
-        amount: track ? Number(track.price) : 29.99,
-        payerName: formData.nombre,
-        payerEmail: formData.correo,
-        payerPhone: formData.telefono,
-        payerDocument: formData.documento,
-        bankName: formData.banco,
-        personType: formData.tipoPersona,
-        cardHolder: formData.titularTarjeta,
-        cardLastFour: formData.numeroTarjeta ? formData.numeroTarjeta.slice(-4) : undefined,
-        phoneNumber: formData.celularNequi,
-      });
+      // La animacion de pasos corre mientras el servidor procesa el pago
+      const animation = (async () => {
+        for (let i = 1; i < PROCESSING_STEPS.length; i++) {
+          await sleep(STEP_MS);
+          setProcessingIdx(i);
+        }
+        await sleep(STEP_MS);
+      })();
 
-      setTransactionData(res);
+      if (target.kind === "plan") {
+        const [res] = await Promise.all([
+          simulateSubscriptionApi(token, {
+            plan: target.plan,
+            period: target.period,
+            paymentMethod: metodo,
+            ...payer,
+            cardLastFour,
+          }),
+          animation,
+        ]);
+        setSubscriptionData(res);
+      } else {
+        const [res] = await Promise.all([
+          simulatePaymentApi(token, {
+            trackIds: target.ids,
+            paymentMethod: metodo,
+            licenseType: "ESTÁNDAR COMERCIAL (MP3 HQ)",
+            ...payer,
+            bankName: formData.banco,
+            personType: formData.tipoPersona,
+            cardHolder: formData.titularTarjeta,
+            cardLastFour,
+            phoneNumber: formData.celularNequi,
+          }),
+          animation,
+        ]);
+        setTransactionData(res);
+        // Lo que ya se pago deja de estar en el carrito
+        target.ids.forEach((id) => removeFromCart(id));
+      }
     } catch (err) {
-      setErrorMsg((err as Error)?.message || "Error al procesar la simulación de pago.");
+      setErrorMsg((err as Error)?.message || "Error al procesar el pago.");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleDownload = async () => {
-    if (!token || !beatId) return;
+  const handleDownload = async (trackId: string, title: string) => {
+    if (!token) return;
     try {
-      setIsDownloading(true);
-      await downloadBeatFile(token, beatId, track?.title || "Beat_Oziris");
+      setDownloadingId(trackId);
+      await downloadBeatFile(token, trackId, title || "Beat_Oziris");
     } catch (err) {
       showToast("error", (err as Error)?.message || "Error al descargar el archivo de audio.");
     } finally {
-      setIsDownloading(false);
+      setDownloadingId(null);
     }
   };
 
@@ -158,6 +237,45 @@ function DatosPagoContent() {
     return "Completa los datos de tu tarjeta para realizar el pago de forma segura.";
   };
 
+  const done = !!transactionData || !!subscriptionData;
+  const stepperCurrent = done ? 4 : isProcessing ? 3 : 2;
+
+  if (!isLoading && !isAuthenticated) {
+    return (
+      <main className="min-h-screen bg-[#090d10] text-white flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <Lock className="w-10 h-10 text-emerald-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-3">Inicia sesión para pagar</h1>
+          <p className="text-zinc-400 mb-6">Necesitas una cuenta para completar el pago.</p>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 px-5 py-3 rounded-xl font-bold"
+          >
+            Ir a iniciar sesión
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  if (target.kind === "none") {
+    return (
+      <main className="min-h-screen bg-[#090d10] text-white flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-3">No hay nada para pagar</h1>
+          <p className="text-zinc-400 mb-6">Elige un beat o un plan para iniciar el proceso de pago.</p>
+          <Link
+            href="/inicio"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 px-5 py-3 rounded-xl font-bold"
+          >
+            Volver al catálogo
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#090d10] text-white font-sans">
 
@@ -165,13 +283,17 @@ function DatosPagoContent() {
       <header className="border-b border-emerald-500/10 bg-[#090d10]/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
 
-          <Link
-            href={`/checkout?beat=${beatId}`}
-            className="flex items-center gap-2 text-zinc-400 hover:text-emerald-300 transition"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Volver al pago</span>
-          </Link>
+          {done || isProcessing ? (
+            <span />
+          ) : (
+            <Link
+              href={backUrl}
+              className="flex items-center gap-2 text-zinc-400 hover:text-emerald-300 transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Volver al pago</span>
+            </Link>
+          )}
 
           <div className="flex items-center gap-2">
 
@@ -189,6 +311,8 @@ function DatosPagoContent() {
       {/* CONTENIDO */}
       <section className="max-w-4xl mx-auto px-4 py-12">
 
+        <PaymentStepper current={stepperCurrent} />
+
         {/* TITULO */}
         <div className="text-center mb-10">
 
@@ -196,12 +320,12 @@ function DatosPagoContent() {
 
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
 
-            Información de compra
+            Información de pago
 
           </span>
 
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
-            Tus datos
+            {isProcessing ? "Procesando tu pago" : done ? "¡Pago completado!" : "Tus datos"}
           </h1>
 
           <p className="text-zinc-400 max-w-xl mx-auto">
@@ -210,6 +334,44 @@ function DatosPagoContent() {
 
         </div>
 
+        {/* RESUMEN DE LO QUE SE PAGA */}
+        {!done && (
+        <div className="bg-[#0f151c] border border-white/10 rounded-2xl p-5 mb-6">
+          <p className="text-xs text-zinc-400 uppercase tracking-wider mb-3">
+            {target.kind === "plan" ? "Tu plan" : tracks.length > 1 ? `Tus ${tracks.length} beats` : "Tu beat"}
+          </p>
+          {target.kind === "plan" ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Crown className="w-5 h-5 text-emerald-400" />
+                <span className="font-bold">
+                  {plan?.name || target.plan} · {target.period === "YEARLY" ? "anual" : "mensual"}
+                </span>
+              </div>
+              <span className="font-bold text-emerald-400">{formatCop(planTotal)}</span>
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {tracks.map((t) => (
+                <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="flex items-center gap-2 min-w-0">
+                    <Music2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="truncate">{t.title}</span>
+                  </span>
+                  <span className="text-zinc-300 shrink-0">{formatCop(t.price)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+            <span className="font-bold">Total a pagar</span>
+            <span className="text-xl font-bold text-emerald-400">{formatCop(total)}</span>
+          </div>
+        </div>
+        )}
+
+        {!isProcessing && !done && (
+          <>
         {/* METODO */}
         <div className="bg-[#0f151c] border border-emerald-500/20 rounded-2xl p-5 mb-6">
 
@@ -611,64 +773,144 @@ function DatosPagoContent() {
 
         </form>
 
-        {/* TRANSACCIÓN EXITOSA Y DESCARGA DIRECTA */}
+          </>
+        )}
+
+        {/* PROCESANDO */}
+        {isProcessing && (
+          <div className="bg-[#0f151c] border border-emerald-500/30 rounded-3xl p-8 animate-in fade-in duration-300">
+            <div className="flex justify-center mb-6">
+              <Loader2 className="w-12 h-12 text-emerald-400 animate-spin" />
+            </div>
+            <ul className="space-y-3 max-w-sm mx-auto">
+              {PROCESSING_STEPS.map((label, i) => (
+                <li
+                  key={label}
+                  className={`flex items-center gap-3 text-sm ${
+                    i < processingIdx ? "text-emerald-300" : i === processingIdx ? "text-white" : "text-zinc-600"
+                  }`}
+                >
+                  {i < processingIdx ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  ) : i === processingIdx ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
+                  ) : (
+                    <span className="w-5 h-5 rounded-full border border-zinc-700" />
+                  )}
+                  <span>{label}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-center text-xs text-zinc-500 mt-6">No cierres esta ventana.</p>
+          </div>
+        )}
+
+        {/* CONFIRMACIÓN (beats): ultimo paso, aqui se descarga */}
         {transactionData && (
-          <div className="mt-8 p-6 rounded-3xl bg-[#0f151c] border border-emerald-500/40 shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="p-6 rounded-3xl bg-[#0f151c] border border-emerald-500/40 shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
                   <CheckCircle2 className="w-7 h-7" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-xl text-white">
-                    ¡Pago Simulado Exitoso!
-                  </h3>
+                  <h3 className="font-extrabold text-xl text-white">¡Pago Simulado Exitoso!</h3>
                   <p className="text-xs text-zinc-400">
                     Transacción: <span className="font-mono text-emerald-400">{transactionData.transactionId}</span>
                   </p>
                 </div>
               </div>
-
               <span className="text-xs font-mono bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full">
                 LICENCIA GENERADA
               </span>
             </div>
 
-            <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/[0.03] border border-emerald-500/20 rounded-2xl p-4">
-              <div>
-                <h4 className="font-bold text-white text-sm">
-                  {track?.title || "Beat OZIRIS HQ"}
-                </h4>
-                <p className="text-xs text-zinc-400">
-                  Audio Master WAV/MP3 • Licencia Comercial Activa
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleDownload}
-                disabled={isDownloading}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/20 transition transform hover:scale-105 active:scale-95"
-              >
-                {isDownloading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Descargando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    <span>Descargar Beat Ahora</span>
-                  </>
-                )}
-              </button>
-            </div>
+            <ul className="mt-5 space-y-3">
+              {transactionData.purchases.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/[0.03] border border-emerald-500/20 rounded-2xl p-4"
+                >
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-white text-sm truncate">{p.trackTitle}</h4>
+                    <p className="text-xs text-zinc-400">Audio Master WAV/MP3 • Licencia Comercial Activa</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(p.trackId, p.trackTitle)}
+                    disabled={downloadingId === p.trackId}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/20 transition active:scale-95 disabled:opacity-60 cursor-pointer"
+                  >
+                    {downloadingId === p.trackId ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Descargando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        <span>Descargar Beat</span>
+                      </>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
 
             <div className="mt-5 flex items-center justify-between pt-3 border-t border-white/5 text-xs text-zinc-400">
               <Link href="/inicio" className="text-emerald-400 hover:text-emerald-300 hover:underline">
                 ← Volver al catálogo de Beats
               </Link>
-              <span>El beat también está guardado en tu perfil.</span>
+              <span>Tus beats también quedan guardados en tu perfil.</span>
+            </div>
+          </div>
+        )}
+
+        {/* CONFIRMACIÓN (plan) */}
+        {subscriptionData && (
+          <div className="p-6 rounded-3xl bg-[#0f151c] border border-emerald-500/40 shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-5">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                <Crown className="w-7 h-7" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-xl text-white">¡Ya tienes el plan {subscriptionData.planName}!</h3>
+                <p className="text-xs text-zinc-400">
+                  Transacción: <span className="font-mono text-emerald-400">{subscriptionData.transactionId}</span>
+                </p>
+              </div>
+            </div>
+            <dl className="mt-5 grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <dt className="text-zinc-400 text-xs">Pagado</dt>
+                <dd className="font-bold text-emerald-400">{formatCop(subscriptionData.amount)}</dd>
+              </div>
+              <div>
+                <dt className="text-zinc-400 text-xs">Facturación</dt>
+                <dd className="font-bold">{subscriptionData.period === "YEARLY" ? "Anual" : "Mensual"}</dd>
+              </div>
+              <div>
+                <dt className="text-zinc-400 text-xs">Válido hasta</dt>
+                <dd className="font-bold">{new Date(subscriptionData.endsAt).toLocaleDateString("es-CO")}</dd>
+              </div>
+              <div>
+                <dt className="text-zinc-400 text-xs">Beats que puedes subir</dt>
+                <dd className="font-bold">{subscriptionData.maxBeats === null ? "Ilimitados" : subscriptionData.maxBeats}</dd>
+              </div>
+            </dl>
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/perfil"
+                className="flex-1 text-center px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold text-sm"
+              >
+                Ver mi perfil
+              </Link>
+              <Link
+                href="/inicio"
+                className="flex-1 text-center px-6 py-3 rounded-xl bg-white/5 border border-white/10 font-bold text-sm hover:bg-white/10"
+              >
+                Ir al catálogo
+              </Link>
             </div>
           </div>
         )}

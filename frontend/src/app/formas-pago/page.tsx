@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   ArrowLeft,
   CreditCard,
-  Smartphone,
   Building2,
   ShieldCheck,
   CheckCircle2,

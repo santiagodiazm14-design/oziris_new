@@ -24,12 +24,8 @@ import {
   Check,
   X,
   Music,
-  ListMusic,
-  MoreHorizontal,
   CheckCircle2,
-  Sparkles,
 } from "lucide-react";
-import Image from "next/image";
 
 export const GlobalAudioPlayer: React.FC = () => {
   const pathname = usePathname();

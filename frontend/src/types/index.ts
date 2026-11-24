@@ -120,3 +120,72 @@ export interface PaymentSimulationResponse {
     alreadyOwned: boolean;
   }>;
 }
+
+// ---------- Suscripciones / planes ----------
+export interface PlanInfo {
+  id: 'FREE' | 'PLUS' | 'PREMIUM';
+  name: string;
+  description: string;
+  priceMonthly: number;
+  priceYearly: number;
+  maxBeats: number | null;
+  features: string[];
+}
+
+export interface MySubscription {
+  plan: 'FREE' | 'PLUS' | 'PREMIUM';
+  planName: string;
+  status: 'ACTIVE' | 'FREE';
+  period: 'MONTHLY' | 'YEARLY' | null;
+  amount: number;
+  currency: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  maxBeats: number | null;
+  beatsUsed: number;
+  beatsRemaining: number | null;
+  features: string[];
+}
+
+export interface SubscriptionSimulationResponse {
+  success: boolean;
+  message: string;
+  transactionId: string;
+  plan: 'PLUS' | 'PREMIUM';
+  planName: string;
+  period: 'MONTHLY' | 'YEARLY';
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  startsAt: string;
+  endsAt: string;
+  maxBeats: number | null;
+}
+
+// ---------- Busqueda (autocompletado) ----------
+export interface ArtistSuggestion {
+  id: string;
+  name: string;
+  artistName: string;
+  avatarUrl: string | null;
+  genre: string | null;
+  verified: boolean;
+  tracksCount: number;
+}
+
+export interface BeatSuggestion {
+  id: string;
+  title: string;
+  genre: string | null;
+  bpm: number | null;
+  price: number;
+  coverUrl: string | null;
+  playsCount: number;
+  producer: { id: string; name: string; artistName: string };
+}
+
+export interface SearchSuggestions {
+  query: string;
+  artists: ArtistSuggestion[];
+  beats: BeatSuggestion[];
+}
