@@ -1,7 +1,7 @@
 // Utilidades compartidas por los tests de endpoints.
 import { readFileSync } from 'node:fs';
 
-export const BASE = process.env.API_URL || 'http://localhost:4000';
+export const BASE = (process.env.API_URL || 'http://localhost:4000').trim().replace(/^["']|["']$/g, '').replace(/\/+$/, '');
 export const PASS = 'Password123!';
 
 export const color = {
@@ -14,7 +14,7 @@ export const color = {
 const c = color;
 
 export function adminCreds() {
-  if (process.env.ADMIN_EMAIL) {
+  if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
     return { email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD };
   }
   const txt = readFileSync(new URL('../../../ADMIN_CREDENCIALES.txt', import.meta.url), 'utf8');
@@ -51,7 +51,7 @@ export async function http(path, { method = 'GET', body, token, form } = {}) {
 
 export async function apiIsUp() {
   try {
-    await fetch(BASE + '/', { signal: AbortSignal.timeout(3000) });
+    await fetch(BASE + '/', { signal: AbortSignal.timeout(75000) });
     return true;
   } catch {
     return false;
@@ -82,7 +82,7 @@ export function createRunner() {
   async function adminToken() {
     const { email, password } = adminCreds();
     const r = await login(email, password);
-    if (r.s !== 200) throw new Error(`No se pudo iniciar sesion como admin (status ${r.s})`);
+    if (r.s !== 200) throw new Error(`No se pudo iniciar sesion como admin en ${BASE} (status ${r.s}): ${JSON.stringify(r.b)?.slice(0, 200)}`);
     return r.b.access_token;
   }
 
@@ -104,7 +104,7 @@ export function createRunner() {
     const r = await http('/auth/register', { method: 'POST', body });
     if (r.s !== 201) throw new Error(`No se pudo registrar ${kind} (status ${r.s}): ${JSON.stringify(r.b)}`);
     track(r.b.user.id);
-    return { token: r.b.access_token, id: r.b.user.id, email: body.email, password: PASS };
+    return { token: r.b.access_token, id: r.b.user.id, email: body.email, password: PASS, name: body.name };
   }
 
   function beatForm({ title = 'Test Beat', price = '19.5' } = {}) {

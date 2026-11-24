@@ -7,24 +7,25 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  email      String   @unique @map("correo")
-  password   String   @map("contrasena")
-  name       String   @map("nombre")
-  lastName   String?  @map("apellido")
-  artistName String?  @map("nombre_artistico")
-  location   String?  @map("ubicacion")
-  avatarUrl  String?  @map("url_avatar")
-  bio        String?  @map("biografia")
-  role       Role     @default(USER) @map("rol")
-  isActive   Boolean  @default(true) @map("activo")
-  
+  id         String  @id @default(uuid())
+  email      String  @unique @map("correo")
+  password   String  @map("contrasena")
+  name       String  @map("nombre")
+  lastName   String? @map("apellido")
+  artistName String? @map("nombre_artistico")
+  location   String? @map("ubicacion")
+  avatarUrl  String? @map("url_avatar")
+  bio        String? @map("biografia")
+  role       Role    @default(USER) @map("rol")
+  isActive   Boolean @default(true) @map("activo")
+
   tracks         Track[]
   purchases      Purchase[]
   favorites      Favorite[]
   simulations    PaymentSimulation[]
   downloads      DownloadLog[]
   passwordResets PasswordReset[]
+  subscriptions  Subscription[]
   artist         Artist?
 
   createdAt            DateTime  @default(now()) @map("creado_en")
@@ -53,15 +54,15 @@ model Track {
   downloadsCount Int      @default(0) @map("descargas")
   isSold         Boolean  @default(false) @map("vendido")
 
-  producerId   String @map("productor_id")
-  producer     User   @relation(fields: [producerId], references: [id], onDelete: Cascade)
+  producerId String @map("productor_id")
+  producer   User   @relation(fields: [producerId], references: [id], onDelete: Cascade)
 
-  purchases    Purchase[]
-  favorites    Favorite[]
-  downloads    DownloadLog[]
+  purchases Purchase[]
+  favorites Favorite[]
+  downloads DownloadLog[]
 
-  createdAt    DateTime @default(now()) @map("creado_en")
-  updatedAt    DateTime @updatedAt @map("actualizado_en")
+  createdAt DateTime @default(now()) @map("creado_en")
+  updatedAt DateTime @updatedAt @map("actualizado_en")
 
   @@index([producerId])
   @@index([genre])
@@ -70,34 +71,34 @@ model Track {
 }
 
 model Purchase {
-  id              String   @id @default(uuid())
-  amount          Float    @map("monto")
-  status          String   @default("COMPLETED") @map("estado") // COMPLETED, PENDING, CANCELLED, REFUNDED
-  paymentMethod   String?  @default("SIMULATED") @map("metodo_pago")
-  licenseType     String?  @default("STANDARD") @map("tipo_licencia")
-  transactionId   String?  @unique @map("transaccion_id")
+  id            String  @id @default(uuid())
+  amount        Float   @map("monto")
+  status        String  @default("COMPLETED") @map("estado") // COMPLETED, PENDING, CANCELLED, REFUNDED
+  paymentMethod String? @default("SIMULATED") @map("metodo_pago")
+  licenseType   String? @default("STANDARD") @map("tipo_licencia")
+  transactionId String? @unique @map("transaccion_id")
 
   // Payer details captured during checkout/simulation
-  payerName       String?  @map("nombre_pagador")
-  payerEmail      String?  @map("correo_pagador")
-  payerPhone      String?  @map("telefono_pagador")
-  payerDocument   String?  @map("documento_pagador")
-  paymentProvider String?  @map("proveedor_pago")
+  payerName       String? @map("nombre_pagador")
+  payerEmail      String? @map("correo_pagador")
+  payerPhone      String? @map("telefono_pagador")
+  payerDocument   String? @map("documento_pagador")
+  paymentProvider String? @map("proveedor_pago")
 
   downloadCount    Int       @default(0) @map("conteo_descargas")
   lastDownloadedAt DateTime? @map("ultima_descarga_en")
 
-  userId          String   @map("usuario_id")
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("usuario_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  trackId         String   @map("pista_id")
-  track           Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  trackId String @map("pista_id")
+  track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
 
-  simulation      PaymentSimulation?
-  downloads       DownloadLog[]
+  simulation PaymentSimulation?
+  downloads  DownloadLog[]
 
-  createdAt       DateTime @default(now()) @map("creado_en")
-  updatedAt       DateTime @default(now()) @updatedAt @map("actualizado_en")
+  createdAt DateTime @default(now()) @map("creado_en")
+  updatedAt DateTime @default(now()) @updatedAt @map("actualizado_en")
 
   @@index([userId, trackId])
   @@index([trackId])
@@ -105,63 +106,93 @@ model Purchase {
 }
 
 model PaymentSimulation {
-  id            String   @id @default(uuid())
-  transactionId String   @unique @map("transaccion_id")
-  method        String   @map("metodo") // "PSE", "Tarjeta", "Nequi", "Bancolombia", etc.
-  amount        Float    @map("monto")
-  currency      String   @default("USD") @map("moneda")
-  status        String   @default("APPROVED") @map("estado") // APPROVED, PENDING, REJECTED
+  id            String @id @default(uuid())
+  transactionId String @unique @map("transaccion_id")
+  method        String @map("metodo") // "PSE", "Tarjeta", "Nequi", "Bancolombia", etc.
+  amount        Float  @map("monto")
+  currency      String @default("USD") @map("moneda")
+  status        String @default("APPROVED") @map("estado") // APPROVED, PENDING, REJECTED
 
   // Payer / Customer information
-  payerName     String?  @map("nombre_pagador")
-  payerEmail    String?  @map("correo_pagador")
-  payerPhone    String?  @map("telefono_pagador")
-  payerDocument String?  @map("documento_pagador")
+  payerName     String? @map("nombre_pagador")
+  payerEmail    String? @map("correo_pagador")
+  payerPhone    String? @map("telefono_pagador")
+  payerDocument String? @map("documento_pagador")
 
   // Method specific simulation attributes
-  bankName      String?  @map("nombre_banco") // for PSE (e.g. Bancolombia, Davivienda, etc.)
-  personType    String?  @map("tipo_persona") // "Persona natural", "Persona jurídica"
-  cardHolder    String?  @map("titular_tarjeta") // for Card
-  cardLastFour  String?  @map("ultimos_cuatro_tarjeta") // Masked / last 4 digits
-  phoneNumber   String?  @map("numero_telefono") // for Nequi / Daviplata
+  bankName     String? @map("nombre_banco") // for PSE (e.g. Bancolombia, Davivienda, etc.)
+  personType   String? @map("tipo_persona") // "Persona natural", "Persona jurídica"
+  cardHolder   String? @map("titular_tarjeta") // for Card
+  cardLastFour String? @map("ultimos_cuatro_tarjeta") // Masked / last 4 digits
+  phoneNumber  String? @map("numero_telefono") // for Nequi / Daviplata
 
-  metadata      Json?    @map("metadatos")
+  metadata Json? @map("metadatos")
 
-  userId        String   @map("usuario_id")
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("usuario_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  purchaseId    String?  @unique @map("compra_id")
-  purchase      Purchase? @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  purchaseId String?   @unique @map("compra_id")
+  purchase   Purchase? @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime @default(now()) @map("creado_en")
-  updatedAt     DateTime @default(now()) @updatedAt @map("actualizado_en")
+  createdAt DateTime @default(now()) @map("creado_en")
+  updatedAt DateTime @default(now()) @updatedAt @map("actualizado_en")
 
   @@index([userId])
   @@map("simulaciones_pago")
 }
 
 model DownloadLog {
-  id           String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId       String   @map("usuario_id")
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("usuario_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  trackId      String   @map("pista_id")
-  track        Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  trackId String @map("pista_id")
+  track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
 
-  purchaseId   String?  @map("compra_id")
-  purchase     Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  purchaseId String?   @map("compra_id")
+  purchase   Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
 
-  ipAddress    String?  @map("direccion_ip")
-  userAgent    String?  @map("agente_usuario")
-  fileFormat   String?  @default("MP3") @map("formato_archivo") // MP3, WAV, STEMS, ZIP
-  fileSize     Int?     @map("tamano_archivo")
+  ipAddress  String? @map("direccion_ip")
+  userAgent  String? @map("agente_usuario")
+  fileFormat String? @default("MP3") @map("formato_archivo") // MP3, WAV, STEMS, ZIP
+  fileSize   Int?    @map("tamano_archivo")
 
   downloadedAt DateTime @default(now()) @map("descargado_en")
 
   @@index([userId])
   @@index([trackId])
   @@map("registros_descargas")
+}
+
+/// Suscripcion de un usuario a un plan (Plus / Premium). Sin suscripcion activa rige el plan Free.
+model Subscription {
+  id            String  @id @default(uuid())
+  plan          String  @map("plan") // PLUS | PREMIUM
+  period        String  @map("periodo") // MONTHLY | YEARLY
+  amount        Float   @map("monto")
+  currency      String  @default("COP") @map("moneda")
+  status        String  @default("ACTIVE") @map("estado") // ACTIVE | CANCELLED | REPLACED
+  paymentMethod String? @map("metodo_pago")
+  transactionId String  @unique @map("transaccion_id")
+
+  payerName     String? @map("nombre_pagador")
+  payerEmail    String? @map("correo_pagador")
+  payerPhone    String? @map("telefono_pagador")
+  payerDocument String? @map("documento_pagador")
+  cardLastFour  String? @map("tarjeta_ultimos4")
+
+  startsAt    DateTime  @default(now()) @map("inicia_en")
+  endsAt      DateTime  @map("termina_en")
+  cancelledAt DateTime? @map("cancelada_en")
+
+  userId String @map("usuario_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("creado_en")
+
+  @@index([userId, status])
+  @@map("suscripciones")
 }
 
 model LicensePlan {
@@ -174,8 +205,8 @@ model LicensePlan {
   includesStems Boolean  @default(false) @map("incluye_stems")
   isExclusive   Boolean  @default(false) @map("es_exclusivo")
 
-  createdAt     DateTime @default(now()) @map("creado_en")
-  updatedAt     DateTime @default(now()) @updatedAt @map("actualizado_en")
+  createdAt DateTime @default(now()) @map("creado_en")
+  updatedAt DateTime @default(now()) @updatedAt @map("actualizado_en")
 
   @@map("planes_licencia")
 }
@@ -213,8 +244,8 @@ model PasswordReset {
   ipAddress String?   @map("direccion_ip")
   createdAt DateTime  @default(now()) @map("creado_en")
 
-  userId    String    @map("usuario_id")
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("usuario_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([email])
   @@index([code])
@@ -223,22 +254,21 @@ model PasswordReset {
 }
 
 model Artist {
-  id           String   @id @default(uuid())
-  artisticName String   @map("nombre_artistico")
-  bio          String?  @map("biografia")
-  genre        String?  @map("genero_principal") // Ej: Trap, Reggaeton, Drill, Hip Hop, etc.
-  bannerUrl    String?  @map("url_portada")
-  spotifyUrl   String?  @map("url_spotify")
-  instagramUrl String?  @map("url_instagram")
-  youtubeUrl   String?  @map("url_youtube")
-  verified     Boolean  @default(false) @map("verificado")
+  id           String  @id @default(uuid())
+  artisticName String  @map("nombre_artistico")
+  bio          String? @map("biografia")
+  genre        String? @map("genero_principal") // Ej: Trap, Reggaeton, Drill, Hip Hop, etc.
+  bannerUrl    String? @map("url_portada")
+  spotifyUrl   String? @map("url_spotify")
+  instagramUrl String? @map("url_instagram")
+  youtubeUrl   String? @map("url_youtube")
+  verified     Boolean @default(false) @map("verificado")
 
-  userId       String   @unique @map("usuario_id")
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @map("usuario_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt    DateTime @default(now()) @map("creado_en")
-  updatedAt    DateTime @updatedAt @map("actualizado_en")
+  createdAt DateTime @default(now()) @map("creado_en")
+  updatedAt DateTime @updatedAt @map("actualizado_en")
 
   @@map("artistas")
 }
-

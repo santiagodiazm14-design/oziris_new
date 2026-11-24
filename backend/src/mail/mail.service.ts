@@ -1,6 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
+// Sin timeouts, un SMTP bloqueado deja la peticion colgada minutos.
+const SMTP_TIMEOUTS = {
+  connectionTimeout: 8_000,
+  greetingTimeout: 8_000,
+  socketTimeout: 15_000,
+};
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -35,6 +42,7 @@ export class MailService {
         host: process.env.MAIL_HOST,
         port: Number(process.env.MAIL_PORT) || 587,
         secure: process.env.MAIL_SECURE === 'true',
+        ...SMTP_TIMEOUTS,
         auth: {
           user: rawUser,
           pass: rawPass,
@@ -45,6 +53,7 @@ export class MailService {
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
+      ...SMTP_TIMEOUTS,
       auth: {
         user: rawUser,
         pass: rawPass,
@@ -59,8 +68,10 @@ export class MailService {
     code: string,
   ): Promise<{ success: boolean; message: string }> {
     const { transporter, senderEmail } = this.getTransporter();
+    // API HTTPS de Brevo: funciona en hostings que bloquean SMTP (p. ej. Render gratis).
+    const brevoKey = process.env.BREVO_API_KEY?.trim();
 
-    if (!transporter) {
+    if (!transporter && !brevoKey) {
       this.logger.warn(
         `[MailService] AVISO: Credenciales MAIL_USER o MAIL_PASS no configuradas en .env.`,
       );
@@ -167,6 +178,39 @@ export class MailService {
     `;
 
     try {
+      if (brevoKey) {
+        const sender = process.env.BREVO_SENDER?.trim() || senderEmail;
+        if (!sender) {
+          throw new Error(
+            'Define BREVO_SENDER (remitente verificado en Brevo).',
+          );
+        }
+        const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': brevoKey,
+            'content-type': 'application/json',
+            accept: 'application/json',
+          },
+          body: JSON.stringify({
+            sender: { name: 'Oziris Music', email: sender },
+            to: [{ email: to }],
+            subject: `Tu código de recuperación es ${code} - Oziris`,
+            textContent: `Tu código de recuperación de contraseña para Oziris es: ${code}. Válido por 15 minutos.`,
+            htmlContent,
+          }),
+          signal: AbortSignal.timeout(10_000),
+        });
+        if (!res.ok) {
+          throw new Error(
+            `Brevo respondió ${res.status}: ${(await res.text()).slice(0, 200)}`,
+          );
+        }
+        this.logger.log(`[MailService] Correo enviado por Brevo a: ${to}`);
+        return { success: true, message: 'Correo enviado exitosamente.' };
+      }
+
+      if (!transporter) throw new Error('Sin transporte de correo.');
       const info = await transporter.sendMail({
         from: `"Oziris Music" <${senderEmail}>`,
         to,

@@ -7,7 +7,7 @@
 import readline from 'node:readline/promises';
 import { BASE, apiIsUp, color as c, createRunner } from './_helpers.mjs';
 
-const MODULES = ['auth', 'beats', 'purchases', 'users', 'artists'];
+const MODULES = ['auth', 'beats', 'purchases', 'subscriptions', 'search', 'users', 'artists'];
 
 async function pick() {
   console.log(c.b('\nElige el endpoint a probar:'));
@@ -30,6 +30,7 @@ if (unknown.length) {
   process.exit(2);
 }
 
+console.log(c.d(`API: ${BASE}  (si esta dormido puede tardar ~1 min en despertar)`));
 if (!(await apiIsUp())) {
   console.error(c.r(`\n✘ El API no responde en ${BASE}.`));
   console.error('  Levantalo primero con: npm run start:dev   (o define API_URL)');
@@ -60,4 +61,4 @@ for (const name of wanted) {
 await t.cleanup(admin);
 const { pass, fail } = t.stats;
 console.log('\n' + (fail ? c.r(`Resultado: ${pass} pasaron, ${fail} fallaron`) : c.g(`Resultado: ${pass} pasaron, 0 fallaron`)));
-process.exit(fail ? 1 : 0);
+process.exitCode = fail ? 1 : 0;

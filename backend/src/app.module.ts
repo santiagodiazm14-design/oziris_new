@@ -8,6 +8,8 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TracksModule } from './tracks/tracks.module';
 import { PurchasesModule } from './purchases/purchases.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { SearchModule } from './search/search.module';
 import { StorageModule } from './storage/storage.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { MailModule } from './mail/mail.module';
@@ -22,6 +24,8 @@ import { envInt } from './common/env';
     UsersModule,
     TracksModule,
     PurchasesModule,
+    SubscriptionsModule,
+    SearchModule,
     StorageModule,
     MailModule,
     PrismaModule,

@@ -6,12 +6,16 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { Track } from './dto';
 import { rethrowPrisma } from '../common/prisma-errors';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 export type { Track };
 
 @Injectable()
 export class TracksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly subscriptions: SubscriptionsService,
+  ) {}
 
   async findAll(params?: {
     genre?: string;
@@ -147,6 +151,9 @@ export class TracksService {
         'Acceso denegado: Solo los usuarios con perfil de artista o productores pueden subir beats.',
       );
     }
+
+    // Limite de beats segun el plan (Free 10, Plus 100, Premium ilimitado)
+    await this.subscriptions.assertCanUpload(producer.id, producer.role);
 
     const created = await this.prisma.track.create({
       data: {

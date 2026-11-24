@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TracksService } from './tracks.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 describe('TracksService', () => {
@@ -23,6 +24,10 @@ describe('TracksService', () => {
       providers: [
         TracksService,
         { provide: PrismaService, useValue: prismaService },
+        {
+          provide: SubscriptionsService,
+          useValue: { assertCanUpload: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 
