@@ -24,11 +24,11 @@ export class UpdateTrackDto {
   @MaxLength(1000)
   description?: string;
 
-  @ApiPropertyOptional({ example: 29.99 })
+  @ApiPropertyOptional({ example: 29900, description: 'Precio en COP' })
   @IsOptional()
   @IsNumber()
   @Min(0)
-  @Max(100000)
+  @Max(10000000)
   price?: number;
 
   @ApiPropertyOptional({ example: 'Trap' })

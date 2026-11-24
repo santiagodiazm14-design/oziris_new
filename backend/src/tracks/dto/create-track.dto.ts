@@ -14,9 +14,9 @@ export class CreateTrackDto {
   description?: string;
 
   @ApiPropertyOptional({
-    example: 29.99,
-    description: 'Precio en USD',
-    default: 29.99,
+    example: 29900,
+    description: 'Precio en pesos colombianos (COP)',
+    default: 29900,
   })
   price?: number;
 

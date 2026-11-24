@@ -159,7 +159,7 @@ export class TracksService {
       data: {
         title: data.title || 'Untitled Beat',
         description: data.description || '',
-        price: Number(data.price) || 29.99,
+        price: Number(data.price) || 29900,
         genre: data.genre || 'Trap',
         bpm: Number(data.bpm) || 120,
         key: data.key || 'C Minor',

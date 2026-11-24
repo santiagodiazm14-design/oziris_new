@@ -10,6 +10,10 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { UsersService } from '../users/users.service';
+import {
+  LoginAttemptsService,
+  tooManyLoginAttempts,
+} from './login-attempts.service';
 
 const MAX_RESET_ATTEMPTS = 5;
 const RESET_TTL_MS = 15 * 60 * 1000;
@@ -32,6 +36,7 @@ export class AuthService {
     private mailService: MailService,
     private usersService: UsersService,
     private jwtService: JwtService,
+    private loginAttempts: LoginAttemptsService,
   ) {}
 
   async register(data: {
@@ -80,6 +85,10 @@ export class AuthService {
       throw new BadRequestException('Por favor ingrese correo y contraseña.');
     }
 
+    // Cuenta bloqueada por demasiados intentos: ni siquiera se revisa la clave
+    const attemptKey = LoginAttemptsService.keyFor(data.email);
+    this.loginAttempts.assertNotLocked(attemptKey);
+
     const user = await this.usersService.findByEmailWithPassword(data.email);
 
     // Siempre se ejecuta bcrypt para no revelar por tiempo si el correo existe
@@ -88,8 +97,14 @@ export class AuthService {
       user?.password ?? DUMMY_HASH,
     );
     if (!user || !isPasswordValid) {
-      throw new UnauthorizedException('Credenciales incorrectas.');
+      // Se cuenta igual exista o no el correo, para no revelar cuentas
+      const failure = this.loginAttempts.registerFailure(attemptKey);
+      if (failure.locked) throw tooManyLoginAttempts(failure.retryAfter);
+      throw new UnauthorizedException(
+        `Credenciales incorrectas. Te ${failure.remaining === 1 ? 'queda 1 intento' : `quedan ${failure.remaining} intentos`}.`,
+      );
     }
+    this.loginAttempts.reset(attemptKey);
     if (user.isActive === false) {
       throw new ForbiddenException(
         'Esta cuenta se encuentra desactivada. Contacte al administrador.',

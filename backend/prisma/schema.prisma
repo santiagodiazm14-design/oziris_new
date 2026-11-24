@@ -110,7 +110,7 @@ model PaymentSimulation {
   transactionId String @unique @map("transaccion_id")
   method        String @map("metodo") // "PSE", "Tarjeta", "Nequi", "Bancolombia", etc.
   amount        Float  @map("monto")
-  currency      String @default("USD") @map("moneda")
+  currency      String @default("COP") @map("moneda")
   status        String @default("APPROVED") @map("estado") // APPROVED, PENDING, REJECTED
 
   // Payer / Customer information

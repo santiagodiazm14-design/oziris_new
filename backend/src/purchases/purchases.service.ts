@@ -163,7 +163,7 @@ export class PurchasesService {
                 transactionId: `${transactionId}-SIM-${out.length + 1}`,
                 method: paymentMethod,
                 amount,
-                currency: 'USD',
+                currency: 'COP',
                 status: 'APPROVED',
                 payerName: dto.payerName || null,
                 payerEmail: dto.payerEmail || null,

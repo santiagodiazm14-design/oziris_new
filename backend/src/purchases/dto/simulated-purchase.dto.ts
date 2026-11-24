@@ -46,8 +46,8 @@ export class SimulatedPurchaseDto {
   licenseType?: string;
 
   @ApiPropertyOptional({
-    example: 29.99,
-    description: 'Monto total pagado en USD',
+    example: 29900,
+    description: 'Monto total pagado en COP',
   })
   @IsOptional()
   amount?: number;

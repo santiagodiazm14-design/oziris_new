@@ -72,7 +72,7 @@ export class TracksController {
     name: 'maxPrice',
     required: false,
     example: 50,
-    description: 'Precio máximo en USD',
+    description: 'Precio máximo en COP',
   })
   @ApiQuery({
     name: 'category',
@@ -150,7 +150,11 @@ export class TracksController {
           example: 'Beat oscuro con 808s',
           description: 'Descripción',
         },
-        price: { type: 'number', example: 29.99, description: 'Precio en USD' },
+        price: {
+          type: 'number',
+          example: 29900,
+          description: 'Precio en pesos colombianos (COP)',
+        },
         genre: {
           type: 'string',
           example: 'Trap',
@@ -226,11 +230,11 @@ export class TracksController {
     const parsedPrice =
       body?.price !== undefined && body?.price !== ''
         ? Number(body.price)
-        : 29.99;
+        : 29900;
     if (
       !Number.isFinite(parsedPrice) ||
       parsedPrice < 0 ||
-      parsedPrice > 100000
+      parsedPrice > 10000000
     ) {
       discardUploads();
       throw new BadRequestException('El precio no es válido.');

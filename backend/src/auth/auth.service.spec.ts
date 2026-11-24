@@ -10,6 +10,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { LoginAttemptsService } from './login-attempts.service';
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -57,6 +58,7 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: jwtService },
         { provide: MailService, useValue: mailService },
         { provide: PrismaService, useValue: prismaService },
+        LoginAttemptsService,
       ],
     }).compile();
 
@@ -214,6 +216,80 @@ describe('AuthService', () => {
 
       expect(result).toHaveProperty('access_token', 'mock-jwt-token');
       expect(result.message).toBe('Inicio de sesión exitoso.');
+    });
+  });
+
+  describe('login: bloqueo por intentos fallidos', () => {
+    const wrong = (email = 'lock@mail.com') =>
+      authService.login({ email, password: 'incorrecta' });
+
+    beforeEach(async () => {
+      (usersService.findByEmailWithPassword as jest.Mock).mockResolvedValue({
+        id: 'u-lock',
+        email: 'lock@mail.com',
+        password: await bcrypt.hash('correctPassword', 4),
+        isActive: true,
+        role: 'USER',
+      });
+      (usersService.findById as jest.Mock).mockResolvedValue({ id: 'u-lock' });
+    });
+
+    it('avisa cuántos intentos quedan', async () => {
+      await expect(wrong()).rejects.toThrow(/Te quedan 4 intentos/);
+      await expect(wrong()).rejects.toThrow(/Te quedan 3 intentos/);
+      await expect(wrong()).rejects.toThrow(/Te quedan 2 intentos/);
+      await expect(wrong()).rejects.toThrow(/Te queda 1 intento/);
+    });
+
+    it('al quinto fallo responde 429 con los segundos de espera', async () => {
+      for (let i = 0; i < 4; i++)
+        await expect(wrong()).rejects.toThrow(UnauthorizedException);
+      const err: any = await wrong().catch((e) => e);
+      expect(err.getStatus()).toBe(429);
+      expect(err.getResponse().retryAfter).toBe(60);
+    });
+
+    it('bloqueada, ni la clave correcta entra y ni se consulta la base de datos', async () => {
+      for (let i = 0; i < 5; i++) await wrong().catch(() => undefined);
+      (usersService.findByEmailWithPassword as jest.Mock).mockClear();
+      const err: any = await authService
+        .login({ email: 'LOCK@mail.com ', password: 'correctPassword' })
+        .catch((e) => e);
+      expect(err.getStatus()).toBe(429);
+      expect(usersService.findByEmailWithPassword).not.toHaveBeenCalled();
+    });
+
+    it('otra cuenta no se ve afectada por el bloqueo', async () => {
+      for (let i = 0; i < 5; i++) await wrong().catch(() => undefined);
+      (usersService.findByEmailWithPassword as jest.Mock).mockResolvedValue({
+        id: 'u-other',
+        email: 'other@mail.com',
+        password: await bcrypt.hash('otraClave', 4),
+        isActive: true,
+        role: 'USER',
+      });
+      await expect(
+        authService.login({ email: 'other@mail.com', password: 'otraClave' }),
+      ).resolves.toHaveProperty('access_token');
+    });
+
+    it('un inicio de sesión correcto reinicia el contador', async () => {
+      for (let i = 0; i < 3; i++) await wrong().catch(() => undefined);
+      await authService.login({
+        email: 'lock@mail.com',
+        password: 'correctPassword',
+      });
+      await expect(wrong()).rejects.toThrow(/Te quedan 4 intentos/);
+    });
+
+    it('también cuenta los correos que no existen (no revela cuentas)', async () => {
+      (usersService.findByEmailWithPassword as jest.Mock).mockResolvedValue(
+        null,
+      );
+      for (let i = 0; i < 4; i++)
+        await wrong('fantasma@mail.com').catch(() => undefined);
+      const err: any = await wrong('fantasma@mail.com').catch((e) => e);
+      expect(err.getStatus()).toBe(429);
     });
   });
 

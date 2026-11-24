@@ -22,7 +22,7 @@ export function adminCreds() {
 }
 
 /** Peticion HTTP. Devuelve { s: status, b: body json|null, r: Response, ms }. */
-export async function http(path, { method = 'GET', body, token, form } = {}) {
+export async function http(path, { method = 'GET', body, token, form, retry429 = true } = {}) {
   const t0 = performance.now();
   const headers = {};
   if (token) headers.Authorization = 'Bearer ' + token;
@@ -33,7 +33,7 @@ export async function http(path, { method = 'GET', body, token, form } = {}) {
     payload = JSON.stringify(body);
   }
   let r = await fetch(BASE + path, { method, headers, body: payload });
-  if (r.status === 429) {
+  if (r.status === 429 && retry429) {
     // Limite de peticiones del API (throttler): esperar a que se libere y reintentar una vez.
     const wait = Math.min(Number(r.headers.get('retry-after')) || 61, 65);
     console.log(c.d(`  ⏳ 429 en ${method} ${path}: esperando ${wait}s por el limite de peticiones...`));
