@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2, AlertCircle, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { loginApi } from '@/services/api';
+import { ApiError } from '@/services/http';
+import { SESSION_EXPIRED_KEY } from '@/lib/session';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,10 +17,39 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Segundos que faltan para poder reintentar (despues de 5 intentos fallidos)
+  const [lockSeconds, setLockSeconds] = useState(0);
+  const [expiredNotice, setExpiredNotice] = useState(false);
+
+  // Aviso cuando la sesion se cerro por inactividad
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(SESSION_EXPIRED_KEY)) {
+        sessionStorage.removeItem(SESSION_EXPIRED_KEY);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- leer el aviso guardado al cargar la pagina
+        setExpiredNotice(true);
+      }
+    } catch {
+      /* sin almacenamiento */
+    }
+  }, []);
+
+  // Cuenta regresiva del bloqueo
+  useEffect(() => {
+    if (lockSeconds <= 0) return;
+    const timer = setTimeout(() => {
+      // Al terminar la espera desaparece el aviso de bloqueo
+      if (lockSeconds <= 1) setErrorMessage(null);
+      setLockSeconds(lockSeconds - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [lockSeconds]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (lockSeconds > 0) return;
     setErrorMessage(null);
+    setExpiredNotice(false);
 
     if (!email || !password) {
       setErrorMessage('Por favor ingresa tu correo electrónico y contraseña.');
@@ -38,6 +69,9 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error('Login error:', err);
+      if (err instanceof ApiError && err.status === 429 && err.retryAfter) {
+        setLockSeconds(Math.ceil(err.retryAfter));
+      }
       setErrorMessage((err as Error)?.message || 'Error al iniciar sesión. Comprueba tus credenciales.');
     } finally {
       setIsLoading(false);
@@ -50,6 +84,13 @@ export default function LoginPage() {
         <h2 className="text-3xl font-bold text-white tracking-tight">Bienvenido de vuelta</h2>
         <p className="text-zinc-400">Ingresa a tu cuenta para continuar creando en OZIRIS.</p>
       </div>
+
+      {expiredNotice && !errorMessage && (
+        <div className="flex items-center gap-3 p-4 bg-amber-950/50 border border-amber-500/40 rounded-xl text-amber-200 text-sm animate-in fade-in duration-300">
+          <Clock className="w-5 h-5 text-amber-400 shrink-0" />
+          <span>Tu sesión se cerró por inactividad. Inicia sesión de nuevo para continuar.</span>
+        </div>
+      )}
 
       {errorMessage && (
         <div className="flex items-center gap-3 p-4 bg-red-950/60 border border-red-500/40 rounded-xl text-red-200 text-sm animate-in fade-in duration-300">
@@ -103,13 +144,18 @@ export default function LoginPage() {
         {/* Botón de envío principal */}
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || lockSeconds > 0}
           className="group w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 mt-2 disabled:opacity-50 cursor-pointer"
         >
           {isLoading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
               <span>Iniciando Sesión...</span>
+            </>
+          ) : lockSeconds > 0 ? (
+            <>
+              <Clock className="w-5 h-5 text-slate-950" />
+              <span>Espera {lockSeconds} s para reintentar</span>
             </>
           ) : (
             <>

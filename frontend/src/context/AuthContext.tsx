@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/types';
+import { LAST_ACTIVITY_KEY } from '@/lib/session';
 
 export type { User };
 
@@ -53,6 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(newUser);
     localStorage.setItem(TOKEN_KEY, newToken);
     localStorage.setItem(USER_KEY, JSON.stringify(newUser));
+    // La inactividad se cuenta desde el inicio de sesion
+    localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
   };
 
   const register = (newToken: string, newUser: User) => {
@@ -64,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
     router.push('/login');
   };
 

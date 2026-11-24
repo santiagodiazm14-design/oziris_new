@@ -22,7 +22,7 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
   const [genre, setGenre] = useState('Trap');
   const [bpm, setBpm] = useState<string>('120');
   const [keySignature, setKeySignature] = useState('C Minor');
-  const [price, setPrice] = useState<string>('29.99');
+  const [price, setPrice] = useState<string>('29900');
   const [tags, setTags] = useState('');
 
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -420,14 +420,14 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-white">Precio ($ USD) <span className="text-red-500">*</span></label>
+              <label className="font-semibold text-white">Precio (COP) <span className="text-red-500">*</span></label>
               <input
                 type="number"
-                step="0.01"
+                step="1"
                 min="0"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                placeholder="29.99"
+                placeholder="29900"
                 className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-emerald-500/50"
                 required
               />

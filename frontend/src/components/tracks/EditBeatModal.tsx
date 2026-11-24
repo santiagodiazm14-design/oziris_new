@@ -137,11 +137,11 @@ export default function EditBeatModal({ track, onClose, onSaved, onDeleted }: Ed
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-300">Precio (USD)</label>
+              <label className="text-xs font-semibold text-zinc-300">Precio (COP)</label>
               <input
                 type="number"
                 min={0}
-                step="0.01"
+                step="1"
                 className={inputCls}
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}

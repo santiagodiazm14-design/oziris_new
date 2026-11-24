@@ -1,6 +1,7 @@
 import React from 'react';
 import { Music, Trash2 } from 'lucide-react';
 import { Track } from '@/types';
+import { formatCop } from "@/lib/checkoutParams";
 
 interface AdminTracksTabProps {
   tracks: Track[];
@@ -71,7 +72,7 @@ export const AdminTracksTab: React.FC<AdminTracksTabProps> = ({
                       </span>
                     </td>
                     <td className="py-3.5 px-4 font-bold text-emerald-400">
-                      ${Number(t.price).toFixed(2)}
+                      {formatCop(Number(t.price))}
                     </td>
                     <td className="py-3.5 px-4 text-zinc-300 text-xs">
                       {t.producer?.name || 'Productor OZIRIS'}

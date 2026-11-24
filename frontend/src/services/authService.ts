@@ -1,4 +1,4 @@
-import { apiMessage } from './http';
+import { apiMessage, ApiError } from './http';
 import { API_URL } from './config';
 import { User } from '@/types';
 
@@ -43,7 +43,11 @@ export async function loginApi(email: string, password: string) {
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(apiMessage(data.message, 'Credenciales incorrectas o problema de inicio de sesión.'));
+    throw new ApiError(
+      apiMessage(data.message, 'Credenciales incorrectas o problema de inicio de sesión.'),
+      res.status,
+      typeof data.retryAfter === 'number' ? data.retryAfter : undefined,
+    );
   }
   return data;
 }

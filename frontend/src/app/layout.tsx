@@ -8,6 +8,7 @@ import { PlayerProvider } from "@/context/PlayerContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import CartDrawer from "@/components/cart/CartDrawer";
 import { GlobalAudioPlayer } from "@/components/player";
+import IdleSessionGuard from "@/components/auth/IdleSessionGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +44,7 @@ export default function RootLayout({
                 {children}
                 <CartDrawer />
                 <GlobalAudioPlayer />
+                <IdleSessionGuard />
               </PlayerProvider>
             </FavoritesProvider>
           </CartProvider>

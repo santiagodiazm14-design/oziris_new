@@ -26,6 +26,7 @@ import {
   Music,
   CheckCircle2,
 } from "lucide-react";
+import { formatCop } from "@/lib/checkoutParams";
 
 export const GlobalAudioPlayer: React.FC = () => {
   const pathname = usePathname();
@@ -289,7 +290,7 @@ export const GlobalAudioPlayer: React.FC = () => {
             ) : (
               <>
                 <ShoppingBag className="w-3.5 h-3.5 text-slate-950" />
-                <span>${Number(currentTrack.price).toFixed(2)}</span>
+                <span>{formatCop(Number(currentTrack.price))}</span>
               </>
             )}
           </button>

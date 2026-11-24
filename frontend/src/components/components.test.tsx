@@ -39,7 +39,7 @@ const track: Track = {
   id: 't1',
   title: 'Dark Night',
   description: 'Beat oscuro',
-  price: 25,
+  price: 25000,
   genre: 'Trap',
   bpm: 140,
   key: 'Am',
@@ -127,7 +127,7 @@ describe('EditBeatModal', () => {
   it('precarga los datos del beat', () => {
     setup();
     expect(screen.getByDisplayValue('Dark Night')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('25')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('25000')).toBeInTheDocument();
     expect(screen.getByDisplayValue('140')).toBeInTheDocument();
     expect(screen.getByDisplayValue('dark, 808')).toBeInTheDocument();
   });
@@ -137,7 +137,7 @@ describe('EditBeatModal', () => {
     updateTrackApi.mockResolvedValue({ ...track, price: 30 });
     const { onSaved } = setup();
 
-    const price = screen.getByDisplayValue('25');
+    const price = screen.getByDisplayValue('25000');
     await user.clear(price);
     await user.type(price, '30');
     const tags = screen.getByDisplayValue('dark, 808');
@@ -307,7 +307,7 @@ describe('TrackCard', () => {
     render(<TrackCard {...baseProps} onBuy={onBuy} />);
     await user.click(screen.getByTitle('Comprar beat'));
     expect(onBuy).toHaveBeenCalledWith(track);
-    expect(screen.getByTitle('Comprar beat')).toHaveTextContent('$25.00');
+    expect(screen.getByTitle('Comprar beat')).toHaveTextContent(/25\.000/);
   });
 
   it('si ya está comprado muestra Descargar en lugar de comprar', async () => {

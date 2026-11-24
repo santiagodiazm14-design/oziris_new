@@ -4,6 +4,7 @@ import React from 'react';
 import { Track } from '@/services/api';
 import { useCart } from '@/context/CartContext';
 import { Heart, X, Music, Play, ShoppingBag, Trash2 } from 'lucide-react';
+import { formatCop } from "@/lib/checkoutParams";
 
 interface FavoritesDrawerProps {
   isOpen: boolean;
@@ -104,7 +105,7 @@ export default function FavoritesDrawer({
                         {track.title}
                       </h4>
                       <p className="text-xs text-zinc-400 truncate mt-0.5">
-                        <span className="text-emerald-300">{track.genre || 'Beat'}</span> • <span className="text-emerald-400 font-bold">${Number(track.price).toFixed(2)}</span>
+                        <span className="text-emerald-300">{track.genre || 'Beat'}</span> • <span className="text-emerald-400 font-bold">{formatCop(Number(track.price))}</span>
                       </p>
                     </div>
                   </div>

@@ -10,3 +10,16 @@ export function apiMessage(message: unknown, fallback: string): string {
   if (typeof message === 'string' && message.trim()) return message;
   return fallback;
 }
+
+/** Error de la API con el codigo HTTP y, si aplica, los segundos de espera. */
+export class ApiError extends Error {
+  status: number;
+  retryAfter?: number;
+
+  constructor(message: string, status: number, retryAfter?: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.retryAfter = retryAfter;
+  }
+}

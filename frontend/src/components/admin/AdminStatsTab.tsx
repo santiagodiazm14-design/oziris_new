@@ -1,6 +1,7 @@
 import React from 'react';
 import { Users, UserCheck, Music, DollarSign, RefreshCw } from 'lucide-react';
 import { AdminStats, Track } from '@/types';
+import { formatCop } from "@/lib/checkoutParams";
 
 interface AdminStatsTabProps {
   stats: AdminStats | null;
@@ -67,7 +68,7 @@ export const AdminStatsTab: React.FC<AdminStatsTabProps> = ({
           <div>
             <p className="text-xs font-medium text-zinc-400">Ventas Totales</p>
             <h3 className="text-3xl font-extrabold text-amber-400 mt-1">
-              ${isLoadingStats ? '...' : (stats?.totalRevenue || 359.88).toFixed(2)}
+              {isLoadingStats ? '...' : formatCop(stats?.totalRevenue ?? 0)}
             </h3>
             <span className="text-[11px] text-amber-400/80 mt-1 inline-block">Ingresos generados</span>
           </div>

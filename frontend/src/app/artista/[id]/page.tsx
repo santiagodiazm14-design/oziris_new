@@ -37,6 +37,7 @@ import { useFavorites } from "@/context/FavoritesContext";
 import { useToast } from "@/context/ToastContext";
 import { beatsCheckoutUrl } from "@/lib/checkoutParams";
 import EditBeatModal from "@/components/tracks/EditBeatModal";
+import { formatCop } from "@/lib/checkoutParams";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -358,7 +359,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
                       {isOwner ? (
                         <>
                           <span className="hidden sm:inline text-sm font-extrabold text-emerald-400">
-                            ${Number(track.price).toFixed(2)}
+                            {formatCop(Number(track.price))}
                           </span>
                           <button
                             type="button"
@@ -400,7 +401,7 @@ export default function ArtistPage({ params }: { params: Promise<{ id: string }>
                               className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 border border-emerald-300/30 transition cursor-pointer"
                             >
                               <ShoppingBag className="w-3.5 h-3.5" />
-                              ${Number(track.price).toFixed(2)}
+                              {formatCop(Number(track.price))}
                             </button>
                           )}
                         </>

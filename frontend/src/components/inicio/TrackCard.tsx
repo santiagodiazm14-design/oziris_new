@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Music, Play, Pause, Heart, Download, ShoppingBag } from "lucide-react";
 import { Track } from "@/services/api";
+import { formatCop } from "@/lib/checkoutParams";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -101,7 +102,7 @@ export default function TrackCard({
             </button>
 
             <span className="text-sm font-extrabold text-emerald-400">
-              ${Number(track.price).toFixed(2)}
+              {formatCop(Number(track.price))}
             </span>
           </div>
 
@@ -203,7 +204,7 @@ export default function TrackCard({
               title="Comprar beat"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
-              <span>${Number(track.price).toFixed(2)}</span>
+              <span>{formatCop(Number(track.price))}</span>
             </button>
           )}
         </div>

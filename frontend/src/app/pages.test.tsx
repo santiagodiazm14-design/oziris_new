@@ -290,8 +290,8 @@ describe('Página /artista/[id]', () => {
     memberSince: '2026-01-15T00:00:00.000Z',
   };
   const tracks: Track[] = [
-    { id: 't1', title: 'Dark Night', price: 25, genre: 'Trap', bpm: 140, audioUrl: '/a.mp3', producerId: 'p1', playsCount: 10 },
-    { id: 't2', title: 'Sunrise', price: 15, audioUrl: '/b.mp3', producerId: 'p1' },
+    { id: 't1', title: 'Dark Night', price: 25000, genre: 'Trap', bpm: 140, audioUrl: '/a.mp3', producerId: 'p1', playsCount: 10 },
+    { id: 't2', title: 'Sunrise', price: 15000, audioUrl: '/b.mp3', producerId: 'p1' },
   ];
 
   const renderPage = async (id = 'p1') => {
@@ -359,7 +359,7 @@ describe('Página /artista/[id]', () => {
     await user.click(within(row).getByRole('button', { name: 'Reproducir' }));
     expect(playTrack).toHaveBeenCalledWith(tracks[0], tracks);
 
-    await user.click(within(row).getByRole('button', { name: /\$25\.00/ }));
+    await user.click(within(row).getByRole('button', { name: /25\.000/ }));
     expect(routerPush).toHaveBeenCalledWith(`/checkout?beats=${tracks[0].id}`);
   });
 
@@ -369,7 +369,7 @@ describe('Página /artista/[id]', () => {
     await renderPage();
     await screen.findByText('Dark Night');
     const row = screen.getByText('Dark Night').closest('li') as HTMLElement;
-    await user.click(within(row).getByRole('button', { name: /\$25\.00/ }));
+    await user.click(within(row).getByRole('button', { name: /25\.000/ }));
     expect(showToast).toHaveBeenCalledWith('info', expect.stringMatching(/Inicia sesión/));
     expect(routerPush).not.toHaveBeenCalled();
   });
@@ -380,7 +380,7 @@ describe('Página /artista/[id]', () => {
     await renderPage();
     await screen.findByText('Dark Night');
     const row = screen.getByText('Dark Night').closest('li') as HTMLElement;
-    await user.click(within(row).getByRole('button', { name: /\$25\.00/ }));
+    await user.click(within(row).getByRole('button', { name: /25\.000/ }));
     expect(showToast).toHaveBeenCalledWith('info', expect.stringMatching(/administrador/i));
     expect(routerPush).not.toHaveBeenCalled();
   });
@@ -397,7 +397,7 @@ describe('Página /artista/[id]', () => {
     await waitFor(() => expect(api.downloadBeatFile).toHaveBeenCalledWith('tok', 't1', 'Dark Night'));
     // el otro beat no comprado sigue ofreciendo compra
     const row2 = screen.getByText('Sunrise').closest('li') as HTMLElement;
-    expect(within(row2).getByRole('button', { name: /\$15\.00/ })).toBeInTheDocument();
+    expect(within(row2).getByRole('button', { name: /15\.000/ })).toBeInTheDocument();
   });
 
   it('el dueño ve "Editar" en sus beats y no botones de compra', async () => {
@@ -406,7 +406,7 @@ describe('Página /artista/[id]', () => {
     await screen.findByText('Dark Night');
     expect(screen.getAllByRole('button', { name: /Editar/ })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /Editar perfil/ })).toHaveAttribute('href', '/perfil');
-    expect(screen.queryByRole('button', { name: /\$25\.00/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /25\.000/ })).not.toBeInTheDocument();
   });
 
   it('el dueño edita un beat y la lista se actualiza', async () => {
